@@ -1,0 +1,7 @@
+If you want implementation help next, say which track matters most:
+
+A) Tests + CI
+B) ZATCA / Saudi invoice
+C) More templates + layout config
+D) Save/share PDF + printer cookbook
+I can start on any of those in the repo.
