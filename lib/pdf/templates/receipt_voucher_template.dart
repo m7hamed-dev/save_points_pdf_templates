@@ -1,3 +1,4 @@
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/models/pdf_receipt_voucher_model.dart';
 import 'package:save_points_pdf_templates/pdf/templates/base_template.dart';
@@ -20,6 +21,10 @@ class ReceiptVoucherTemplate extends BaseTemplate<ReceiptVoucherModel> {
 
   /// Overrides the default `Received by` / `Payer` labels.
   final List<String>? signatureLabels;
+
+  @override
+  pw.Widget? footer(pw.Context context) =>
+      sections.pageFooter(context, note: company?.name, reference: data.id);
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
@@ -45,7 +50,8 @@ class ReceiptVoucherTemplate extends BaseTemplate<ReceiptVoucherModel> {
             tr('Received from', 'استلمنا من السيد / السيدة'),
             data.payerName,
           ),
-          ui.dottedField(tr('Amount', 'مبلغ وقدره'), format.money(data.amount)),
+          // The figure already dominates the block above; repeating it as a
+          // field would print the same amount twice.
           if (data.amountInWords?.isNotEmpty ?? false)
             ui.dottedField(tr('In words', 'فقط وقدره'), data.amountInWords!),
           ui.dottedField(
@@ -63,51 +69,77 @@ class ReceiptVoucherTemplate extends BaseTemplate<ReceiptVoucherModel> {
       ui.gap(1.5),
       sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
     ],
-    ui.gap(3),
-    sections.signatures(
-      signatureLabels ??
-          [
-            '${tr('Received by', 'المستلم')}: ${data.receiverName}',
-            '${tr('Payer', 'المسلّم')}: ${data.payerName}',
-          ],
+    ui.gap(2.5),
+    pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          flex: 3,
+          child: sections.signatures(
+            signatureLabels ??
+                [tr('Received by', 'المستلم'), tr('Payer', 'المسلّم')],
+            names: [data.receiverName, data.payerName],
+          ),
+        ),
+        ui.gapX(2),
+        pw.Expanded(
+          child: pw.Padding(
+            padding: pw.EdgeInsets.only(top: theme.spacing * 3.5),
+            child: ui.stampArea(tr('Stamp', 'الختم')),
+          ),
+        ),
+      ],
     ),
   ];
 
   /// The figure, set large in an accent panel — the one thing a reader of a
   /// voucher looks for first.
   pw.Widget _amountBlock() {
+    // Both boxes share one height so their top and bottom edges line up.
+    final blockHeight = qrCodeSize + theme.spacing * 2;
     return pw.Row(
       children: [
         pw.Expanded(
-          child: ui.card(
-            padding: theme.spacing * 1.5,
-            background: theme.accent,
-            borderColor: theme.accent,
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                ui.text(
-                  tr('AMOUNT RECEIVED', 'المبلغ المستلم'),
-                  color: theme.onAccent,
-                  bold: true,
-                  size: theme.headingSize,
-                ),
-                ui.gapX(),
-                ui.text(
-                  format.money(data.amount),
-                  color: theme.onAccent,
-                  bold: true,
-                  size: theme.titleSize,
-                ),
-              ],
+          child: pw.SizedBox(
+            height: blockHeight,
+            child: ui.card(
+              padding: theme.spacing * 1.5,
+              background: theme.accent,
+              borderColor: theme.accent,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  ui.text(
+                    tr('AMOUNT RECEIVED', 'المبلغ المستلم'),
+                    color: theme.onAccent,
+                    bold: true,
+                    size: theme.headingSize,
+                  ),
+                  ui.gapX(),
+                  ui.money(
+                    data.amount,
+                    color: theme.onAccent,
+                    bold: true,
+                    size: theme.titleSize,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         if (qrCode.isNotEmpty) ...[
           ui.gapX(),
-          ui.card(
-            padding: theme.spacing * 0.6,
-            child: ui.qr(qrCode, size: qrCodeSize),
+          // Built with the same widget and the same height as the bar beside
+          // it, so both boxes line up at the top and the bottom.
+          pw.SizedBox(
+            height: blockHeight,
+            width: blockHeight,
+            child: ui.card(
+              padding: theme.spacing,
+              background: PdfColors.white,
+              alignment: pw.Alignment.center,
+              child: ui.qr(qrCode, size: qrCodeSize),
+            ),
           ),
         ],
       ],

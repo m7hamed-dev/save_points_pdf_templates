@@ -55,7 +55,7 @@ class PdfSections {
           ],
         ),
         pw.SizedBox(height: theme.spacing),
-        ui.accentRule(),
+        ui.keyline(),
       ],
     );
   }
@@ -92,21 +92,15 @@ class PdfSections {
               ],
               if (company?.taxNumber?.isNotEmpty ?? false) ...[
                 pw.SizedBox(height: ui.theme.spacing * 0.2),
-                ui.pair(
-                  '${ui.bilingual('VAT', 'الرقم الضريبي')}:',
+                _registration(
+                  ui.bilingual('VAT', 'الرقم الضريبي'),
                   company!.taxNumber!,
-                  size: ui.theme.captionSize,
-                  color: ui.theme.mutedText,
-                  boldSecond: false,
                 ),
               ],
               if (company?.commercialRegister?.isNotEmpty ?? false)
-                ui.pair(
-                  '${ui.bilingual('CR', 'السجل التجاري')}:',
+                _registration(
+                  ui.bilingual('CR', 'السجل التجاري'),
                   company!.commercialRegister!,
-                  size: ui.theme.captionSize,
-                  color: ui.theme.mutedText,
-                  boldSecond: false,
                 ),
             ],
           ),
@@ -126,7 +120,14 @@ class PdfSections {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        ui.title(titleEn, align: pw.TextAlign.right),
+        ui.text(
+          titleEn,
+          size: ui.theme.titleSize,
+          color: ui.theme.accent,
+          bold: true,
+          align: pw.TextAlign.right,
+          letterSpacing: ui.theme.titleTracking,
+        ),
         if (titleAr.isNotEmpty && titleAr != titleEn)
           ui.text(
             titleAr,
@@ -143,8 +144,8 @@ class PdfSections {
           ),
         ],
         if (statusLabel != null && statusLabel.isNotEmpty) ...[
-          pw.SizedBox(height: ui.theme.spacing * 0.5),
-          ui.outlinedBadge(statusLabel, color: statusColor),
+          pw.SizedBox(height: ui.theme.spacing * 0.6),
+          ui.stamp(statusLabel, color: statusColor),
         ],
       ],
     );
@@ -184,49 +185,77 @@ class PdfSections {
     );
   }
 
-  /// A single party block: label, name, then contact lines.
+  /// A single party block: a tracked label, the name, then contact lines,
+  /// held together by an accent bar rather than a filled box.
   pw.Widget partyCard(PdfPartyModel party, String label) {
+    final theme = ui.theme;
     final lines = <String>[
       if (party.address?.isNotEmpty ?? false) party.address!,
       if (party.phone.isNotEmpty) party.phone,
       if (party.email.isNotEmpty) party.email,
     ];
 
-    return ui.card(
-      child: pw.Column(
-        crossAxisAlignment: ui.crossStart,
-        children: [
-          ui.caption(label),
-          pw.SizedBox(height: ui.theme.spacing * 0.4),
-          ui.bidiText(party.name, bold: true, size: ui.theme.headingSize),
-          for (final line in lines) ...[
-            pw.SizedBox(height: ui.theme.spacing * 0.2),
-            ui.caption(line, color: ui.theme.text),
-          ],
-          if (party.taxNumber?.isNotEmpty ?? false) ...[
-            pw.SizedBox(height: ui.theme.spacing * 0.2),
-            ui.pair(
-              '${ui.bilingual('VAT', 'الرقم الضريبي')}:',
-              party.taxNumber!,
-              size: ui.theme.captionSize,
-              boldSecond: false,
-            ),
-          ],
+    final content = pw.Column(
+      crossAxisAlignment: ui.crossStart,
+      children: [
+        ui.microLabel(label, color: theme.accent),
+        pw.SizedBox(height: theme.spacing * 0.45),
+        ui.bidiText(party.name, bold: true, size: theme.headingSize),
+        for (final line in lines) ...[
+          pw.SizedBox(height: theme.spacing * 0.22),
+          ui.caption(line, color: theme.text),
         ],
-      ),
+        if (party.taxNumber?.isNotEmpty ?? false) ...[
+          pw.SizedBox(height: theme.spacing * 0.22),
+          _registration(ui.bilingual('VAT', 'الرقم الضريبي'), party.taxNumber!),
+        ],
+      ],
     );
+
+    return ui.accentBar(child: content);
   }
 
-  /// Label/value pairs in a card — issue date, due date, payment method.
+  /// `VAT  300000000000003` — a tracked label with the number beside it.
+  pw.Widget _registration(String label, String value) => ui.pair(
+    label,
+    value,
+    size: ui.theme.captionSize,
+    color: ui.theme.mutedText,
+    boldSecond: false,
+  );
+
+  /// Label/value rows separated by hairlines — issue date, reference,
+  /// payment method. Quieter than a filled card, and it lines up with the
+  /// party block beside it.
   pw.Widget metaCard(Map<String, String> meta) {
-    return ui.card(
-      child: pw.Column(
-        crossAxisAlignment: ui.crossStart,
-        children: [
-          for (final entry in meta.entries)
-            ui.inlineField(entry.key, entry.value),
+    final theme = ui.theme;
+    final entries = meta.entries.toList();
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) ui.rule(),
+          pw.Padding(
+            padding: pw.EdgeInsets.symmetric(vertical: theme.spacing * 0.35),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(flex: 4, child: ui.microLabel(entries[i].key)),
+                ui.gapX(0.5),
+                pw.Expanded(
+                  flex: 6,
+                  child: ui.bidiText(
+                    entries[i].value,
+                    bold: true,
+                    align: ui.alignEnd,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
@@ -372,36 +401,82 @@ class PdfSections {
     );
   }
 
-  /// Free-text block, visually quieter than the table above it.
+  /// Free-text block, held by an accent bar so it reads as an aside rather
+  /// than another boxed field.
   pw.Widget notes(String value, {String label = 'NOTES'}) {
-    return ui.card(
-      width: double.infinity,
-      background: PdfColors.white,
-      child: pw.Column(
-        crossAxisAlignment: ui.crossStart,
-        children: [
-          ui.caption(label),
-          pw.SizedBox(height: ui.theme.spacing * 0.4),
-          ui.text(value, lineSpacing: 1.6),
-        ],
-      ),
+    final theme = ui.theme;
+    final content = pw.Column(
+      crossAxisAlignment: ui.crossStart,
+      children: [
+        ui.microLabel(label, color: theme.accent),
+        pw.SizedBox(height: theme.spacing * 0.4),
+        ui.text(value, lineSpacing: 1.8),
+      ],
+    );
+    return ui.accentBar(color: theme.accentMuted, child: content);
+  }
+
+  /// A labelled block of short lines — bank details, delivery terms — for the
+  /// space beside the totals panel, which is otherwise dead area.
+  pw.Widget infoBlock(String label, Map<String, String> lines) {
+    if (lines.isEmpty) return pw.SizedBox();
+    final theme = ui.theme;
+    return pw.Column(
+      crossAxisAlignment: ui.crossStart,
+      children: [
+        ui.microLabel(label, color: theme.accent),
+        pw.SizedBox(height: theme.spacing * 0.5),
+        for (final entry in lines.entries)
+          pw.Padding(
+            padding: pw.EdgeInsets.only(bottom: theme.spacing * 0.25),
+            child:
+                entry.key.isEmpty
+                    ? ui.bidiText(entry.value)
+                    : ui.pair(
+                      entry.key,
+                      entry.value,
+                      size: theme.bodySize,
+                      color: theme.mutedText,
+                    ),
+          ),
+      ],
     );
   }
 
-  /// Evenly spaced signature lines.
-  pw.Widget signatures(List<String> labels) {
+  /// Signature blocks: a space to sign, a rule, the role, and a dated line.
+  ///
+  /// A bare rule with a caption reads as an afterthought; giving each one a
+  /// role and a date line is what makes a printed document look official.
+  pw.Widget signatures(
+    List<String> labels, {
+    List<String> names = const [],
+    bool withDate = true,
+  }) {
     if (labels.isEmpty) return pw.SizedBox();
+    final theme = ui.theme;
     return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < labels.length; i++) ...[
-          if (i > 0) ui.gapX(2),
+          if (i > 0) ui.gapX(3),
           pw.Expanded(
             child: pw.Column(
+              crossAxisAlignment: ui.crossStart,
               children: [
-                pw.SizedBox(height: ui.theme.spacing * 3),
-                ui.rule(color: ui.theme.mutedText),
-                pw.SizedBox(height: ui.theme.spacing * 0.4),
-                ui.caption(labels[i], align: pw.TextAlign.center),
+                pw.SizedBox(height: theme.spacing * 3.5),
+                ui.rule(color: theme.mutedText),
+                pw.SizedBox(height: theme.spacing * 0.45),
+                ui.microLabel(labels[i]),
+                if (i < names.length && names[i].isNotEmpty) ...[
+                  pw.SizedBox(height: theme.spacing * 0.2),
+                  ui.bidiText(names[i]),
+                ],
+                if (withDate) ...[
+                  pw.SizedBox(height: theme.spacing * 1.6),
+                  ui.rule(),
+                  pw.SizedBox(height: theme.spacing * 0.45),
+                  ui.microLabel(ui.bilingual('Date', 'التاريخ')),
+                ],
               ],
             ),
           ),
@@ -410,9 +485,14 @@ class PdfSections {
     );
   }
 
-  /// Page footer: an optional legal line on one side, `Page 1 / 3` on the
-  /// other, above a hairline.
-  pw.Widget pageFooter(pw.Context context, {String? note, String? pageLabel}) {
+  /// Page footer: the issuer on one side, the document id in the middle and
+  /// `Page 1 / 3` on the other, over a hairline.
+  pw.Widget pageFooter(
+    pw.Context context, {
+    String? note,
+    String? reference,
+    String? pageLabel,
+  }) {
     final page =
         pageLabel ?? 'Page ${context.pageNumber} / ${context.pagesCount}';
     return pw.Column(
@@ -424,7 +504,9 @@ class PdfSections {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Expanded(child: ui.caption(note ?? '')),
-            ui.caption(page),
+            if (reference != null && reference.isNotEmpty)
+              ui.caption(reference, align: pw.TextAlign.center),
+            pw.Expanded(child: ui.caption(page, align: ui.alignEnd)),
           ],
         ),
       ],

@@ -124,6 +124,7 @@ class PdfUi {
     pw.TextAlign? align,
     int? maxLines,
     double? lineSpacing,
+    double? letterSpacing,
   }) {
     return pw.Text(
       value,
@@ -136,7 +137,65 @@ class PdfUi {
         color: color ?? theme.text,
         fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
         lineSpacing: lineSpacing,
+        // Letter spacing disconnects Arabic glyphs, so it is dropped for any
+        // value containing RTL script regardless of what the caller asked for.
+        letterSpacing: _rtlScript.hasMatch(value) ? null : letterSpacing,
       ),
+    );
+  }
+
+  /// A small label — `BILL TO`, `NOTES`, a column header.
+  ///
+  /// Latin text is upper-cased and tracked. Arabic gets neither: it has no
+  /// case, and letter spacing pulls a connected script apart — `الوحدة`
+  /// comes out as `لوحدة ا` — so tracking is applied only where the script
+  /// can take it.
+  pw.Widget microLabel(
+    String value, {
+    PdfColor? color,
+    pw.TextAlign? align,
+    double? size,
+  }) {
+    final isRtlText = _rtlScript.hasMatch(value);
+    return text(
+      isRtlText ? value : value.toUpperCase(),
+      size: size ?? theme.captionSize,
+      color: color ?? theme.mutedText,
+      bold: true,
+      align: align,
+      letterSpacing: isRtlText ? null : theme.labelTracking,
+    );
+  }
+
+  /// An outlined stamp — `PAID`, `COPY`, `VOID` — heavier than a [badge] and
+  /// tracked, so it reads as a mark applied to the document rather than a UI
+  /// chip.
+  pw.Widget stamp(String value, {PdfColor? color, PdfColor? background}) {
+    final tint = color ?? theme.accent;
+    return pw.Container(
+      padding: pw.EdgeInsets.symmetric(
+        horizontal: theme.spacing * 0.9,
+        vertical: theme.spacing * 0.35,
+      ),
+      decoration: pw.BoxDecoration(
+        color: background,
+        border: pw.Border.all(color: tint, width: theme.borderWidth * 2.2),
+        borderRadius: pw.BorderRadius.circular(theme.radius),
+      ),
+      child: microLabel(value, color: tint, size: theme.captionSize + 0.5),
+    );
+  }
+
+  /// The rule that closes the masthead: an accent bar with a hairline set
+  /// just below it, which reads as a deliberate device rather than a border.
+  pw.Widget keyline({double thickness = 1.8}) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Container(height: thickness, color: theme.accent),
+        pw.SizedBox(height: thickness),
+        pw.Container(height: theme.borderWidth, color: theme.accentMuted),
+      ],
     );
   }
 
@@ -254,7 +313,9 @@ class PdfUi {
           bold: bold,
           align: pw.TextAlign.left,
         ),
-        pw.SizedBox(width: theme.spacing * 0.35),
+        // Scaled to the type size, not the layout grid: at 22pt a fixed
+        // 3pt gap reads as no gap at all.
+        pw.SizedBox(width: (size ?? theme.bodySize) * 0.3),
         text(
           formatters.currency,
           size: size,
@@ -321,9 +382,11 @@ class PdfUi {
     double? padding,
     pw.Alignment? alignment,
     double? width,
+    double? height,
   }) {
     return pw.Container(
       width: width,
+      height: height,
       alignment: alignment,
       padding: pw.EdgeInsets.all(padding ?? theme.spacing),
       decoration: pw.BoxDecoration(
@@ -333,6 +396,30 @@ class PdfUi {
           width: theme.borderWidth,
         ),
         borderRadius: pw.BorderRadius.circular(theme.radius),
+      ),
+      child: child,
+    );
+  }
+
+  /// Content held by a coloured bar on the leading edge.
+  ///
+  /// Drawn as a border rather than a sibling widget: a `Row` with a stretched
+  /// child has no bounded height here, so a separate bar would be infinitely
+  /// tall.
+  pw.Widget accentBar({
+    required pw.Widget child,
+    PdfColor? color,
+    double width = 2.4,
+    double? padding,
+  }) {
+    final side = pw.BorderSide(color: color ?? theme.accent, width: width);
+    return pw.Container(
+      padding: pw.EdgeInsets.symmetric(
+        horizontal: padding ?? theme.spacing * 0.9,
+        vertical: theme.spacing * 0.2,
+      ),
+      decoration: pw.BoxDecoration(
+        border: isRtl ? pw.Border(right: side) : pw.Border(left: side),
       ),
       child: child,
     );
@@ -386,7 +473,7 @@ class PdfUi {
     return pw.Column(
       crossAxisAlignment: crossStart,
       children: [
-        caption(label),
+        microLabel(label),
         pw.SizedBox(height: theme.spacing * 0.25),
         text(value, bold: true),
       ],
@@ -454,7 +541,7 @@ class PdfUi {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.end,
         children: [
-          pw.SizedBox(width: labelWidth, child: caption(label)),
+          pw.SizedBox(width: labelWidth, child: microLabel(label)),
           gapX(0.5),
           pw.Expanded(
             child: pw.Container(
@@ -472,6 +559,27 @@ class PdfUi {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// An empty bordered area to stamp or seal, labelled in the corner.
+  pw.Widget stampArea(String label, {double height = 90, double? width}) {
+    return pw.Container(
+      width: width,
+      height: height,
+      padding: pw.EdgeInsets.all(theme.spacing * 0.7),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(
+          color: theme.border,
+          width: theme.borderWidth,
+          style: pw.BorderStyle.dashed,
+        ),
+        borderRadius: pw.BorderRadius.circular(theme.radius),
+      ),
+      child: pw.Align(
+        alignment: isRtl ? pw.Alignment.topRight : pw.Alignment.topLeft,
+        child: microLabel(label),
       ),
     );
   }

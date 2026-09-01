@@ -117,6 +117,22 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
       tr('Payment', 'طريقة الدفع'): data.paymentMethod,
   };
 
+  /// Lines shown beside the totals panel, in the space that would otherwise
+  /// be empty. Override to print bank details or delivery terms.
+  ///
+  /// An empty key renders the value on its own, unlabelled.
+  Map<String, String> get settlementLines => {
+    if (data.paymentMethod.isNotEmpty)
+      tr('Method', 'الطريقة'): data.paymentMethod,
+    tr('Status', 'الحالة'):
+        data.isFullyPaid
+            ? tr('Settled in full', 'مسددة بالكامل')
+            : tr('Partially settled', 'مسددة جزئياً'),
+  };
+
+  /// Label above [settlementLines].
+  String get settlementLabel => tr('PAYMENT', 'الدفع');
+
   /// Rows above the accent total bar, as raw amounts. The panel formats them
   /// so the figure and the currency stay separate text runs.
   Map<String, double> get totalLines => {
@@ -124,6 +140,10 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
     if (data.totalDiscount > 0) tr('Discount', 'الخصم'): -data.totalDiscount,
     if (data.totalTax > 0) tr('Tax', 'الضريبة'): data.totalTax,
   };
+
+  @override
+  pw.Widget? footer(pw.Context context) =>
+      sections.pageFooter(context, note: company?.name, reference: data.id);
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
@@ -181,6 +201,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
       ).build();
 
   pw.Widget buildTotals() => sections.totalsPanel(
+    leading: sections.infoBlock(settlementLabel, settlementLines),
     lines: totalLines,
     totalLabel: tr('TOTAL', 'الإجمالي'),
     totalValue: data.total,

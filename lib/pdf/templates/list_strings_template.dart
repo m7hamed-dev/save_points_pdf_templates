@@ -42,6 +42,10 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
       headers.isNotEmpty ? headers : data.headers;
 
   @override
+  pw.Widget? footer(pw.Context context) =>
+      sections.pageFooter(context, note: company?.name, reference: data.id);
+
+  @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
     titleEn: title.isNotEmpty ? title : data.displayTitle,
     titleAr: arabicTitle(data.displayTitleAr),

@@ -1,3 +1,33 @@
+## 0.2.1
+
+### Changed
+
+- Design pass across every template. Small labels are upper-cased and tracked,
+  the item table header is a pale accent wash rather than a solid bar, the last
+  column is set in bold, party and notes blocks are held by an accent bar
+  instead of a filled box, and the masthead closes on a keyline.
+- The area beside the totals panel is no longer blank: itemized templates print
+  payment details there via `settlementLines` / `PdfSections.infoBlock`.
+- Signatures print the role, the signatory's name and a dated line; receipt
+  vouchers add a stamp area and no longer repeat the amount as a field.
+- Page footers carry the document number alongside the issuer and page count.
+
+### Added
+
+- `PdfTheme`: `labelTracking`, `titleTracking`, `headerStyle`
+  (`PdfTableHeaderStyle.soft` / `filled` / `underlined`), and the derived
+  `accentSoft` / `accentMuted` tints with a public `PdfTheme.mix`.
+- `PdfUi`: `microLabel`, `stamp`, `stampArea`, `accentBar`, `keyline`, and
+  `letterSpacing` on `text`.
+- `PdfSections.infoBlock`, and `names` on `signatures`.
+
+### Fixed
+
+- Letter spacing is dropped on any value containing right-to-left script.
+  Tracking a connected script pulls it apart — `الوحدة` was rendering as
+  `لوحدة ا` in Arabic table headers.
+- The QR box beside a voucher's amount bar now matches its height exactly.
+
 ## 0.2.0
 
 Reworked release. The public API changed substantially — see **Breaking** below.

@@ -51,7 +51,7 @@ final bytes = await PdfGenerator.generate(
 | 🧾 **Typed documents** | Sales invoices, expense records, receipt vouchers, minimal invoices and free-form tabular reports |
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
-| 🎨 **Themeable** | `PdfTheme` drives every color, size and spacing; three presets plus `copyWith` |
+| 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
 | 🧮 **Totals that add up** | Line and document level discount/tax, computed subtotal, paid and balance due — or pass a total to reproduce server-side figures |
 | 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
 | 🔠 **Your fonts** | No bundled TTFs — point at an asset, hand over a `pw.Font`, and declare fallbacks for missing glyphs |
@@ -68,7 +68,7 @@ Or add it by hand:
 
 ```yaml
 dependencies:
-  save_points_pdf_templates: ^0.2.0
+  save_points_pdf_templates: ^0.2.1
 ```
 
 > [!IMPORTANT]
@@ -227,11 +227,19 @@ final config = PdfConfig(
 Every color, type size and spacing value lives on `PdfTheme`.
 
 ```dart
-const PdfTheme.modern();                                  // deep navy, the default
-const PdfTheme.classic();                                 // black rules, no radius
-const PdfTheme.minimal();                                 // hairlines, no fills
+const PdfTheme.modern();     // navy accent, soft table header — the default
+const PdfTheme.classic();    // black rules, filled header, square corners
+const PdfTheme.minimal();    // hairlines only, no fills, underlined header
 const PdfTheme.modern(accent: PdfColor.fromInt(0xFF00695C));
 ```
+
+The table header follows `headerStyle`:
+
+| `PdfTableHeaderStyle` | Look |
+|---|---|
+| `soft` | Pale accent wash, accent labels over a firm accent rule (default) |
+| `filled` | Solid accent bar with reversed text |
+| `underlined` | No fill; the header sits on a rule |
 
 Tweak a preset instead of writing one from scratch:
 
@@ -239,6 +247,8 @@ Tweak a preset instead of writing one from scratch:
 final theme = const PdfTheme.modern().copyWith(
   accent: PdfColors.teal700,
   showZebraStripes: false,
+  headerStyle: PdfTableHeaderStyle.filled,
+  labelTracking: 1.0,                 // tracking on small caps labels
   margin: const PdfMargin.all(24),
 );
 ```
@@ -266,6 +276,12 @@ configured font cannot draw Arabic.
 
 Money is rendered as two runs, the figure and the currency, for the same
 reason. Use `ui.money(value)` rather than interpolating a string.
+
+> [!WARNING]
+> Letter spacing must never reach Arabic — it pulls the connected script
+> apart, turning `الوحدة` into `لوحدة ا`. `PdfUi.text` drops `letterSpacing`
+> on any value containing RTL script, and `ui.microLabel` tracks and
+> upper-cases Latin only. Follow the same rule in custom code.
 
 ## 📤 Output
 
@@ -319,13 +335,14 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 <details>
 <summary><b>The building blocks</b></summary>
 
-`ui` (`PdfUi`) — `text`, `bidiText`, `caption`, `heading`, `title`, `money`,
-`pair`, `card`, `badge`, `rule`, `gap`, `inlineField`, `dottedField`, `qr`,
-`barcode`, `logo`.
+`ui` (`PdfUi`) — `text`, `bidiText`, `microLabel`, `caption`, `heading`,
+`title`, `money`, `pair`, `card`, `accentBar`, `badge`, `stamp`, `stampArea`,
+`keyline`, `rule`, `gap`, `inlineField`, `dottedField`, `qr`, `barcode`,
+`logo`.
 
 `sections` (`PdfSections`) — `documentHeader`, `partyAndMeta`, `partyCard`,
-`metaCard`, `totalsPanel`, `totalsPanelText`, `notes`, `signatures`,
-`pageFooter`.
+`metaCard`, `totalsPanel`, `totalsPanelText`, `infoBlock`, `notes`,
+`signatures`, `pageFooter`.
 
 `PdfDataTable` — the paginating table, built from `PdfColumnSpec`s.
 
@@ -343,8 +360,11 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
    figure computed elsewhere.
 3. **Put the currency in the column header**, not in every cell. The itemized
    templates already do this; keep it if you override `columns`.
-4. **Prefer `theme` over hard-coded colors** so a brand change is one line.
-5. **Test the long case.** A document that fits one page hides pagination bugs
+4. **Fill the space beside the totals.** `ItemizedInvoiceTemplate` puts payment
+   details there via `settlementLines`; override it with bank details or
+   delivery terms rather than leaving the area blank.
+5. **Prefer `theme` over hard-coded colors** so a brand change is one line.
+6. **Test the long case.** A document that fits one page hides pagination bugs
    in a custom template — render 100 rows in a test.
 
 ## 🔧 Troubleshooting
@@ -356,6 +376,7 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 | Digits or IDs read backwards | Same cause, in your own template | As above; `PdfUi.directionOf` shows what a value will be treated as |
 | `PdfTooBigPageException` | A block that never fits is retried on each page — usually a table nested in a column | Return the table as its own entry from `body` |
 | Numbers show as `3.00` where you wanted `3` | `format.number` always shows two decimals | Use `format.quantity` for counts |
+| Arabic letters look detached | Letter spacing applied to a connected script | Use `ui.microLabel` / `ui.text`, which drop tracking on RTL text |
 | A font asset silently does nothing | Path typo, swallowed by the fallback | Set `strictFonts: true` to get `PdfAssetException` |
 
 ## 🗺️ Roadmap
@@ -370,6 +391,7 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+- **v0.2.1** — Design pass: tracked labels, softer table header, filled totals gutter, Arabic letter-spacing fix.
 - **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
 - **v0.1.0** — Initial templates, models and PDF generation.
 

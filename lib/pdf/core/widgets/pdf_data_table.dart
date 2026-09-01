@@ -1,6 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_ui.dart';
+import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_theme.dart';
 
 /// One column of a [PdfDataTable].
 class PdfColumnSpec {
@@ -39,6 +40,7 @@ class PdfDataTable {
     this.rowNumbers = false,
     this.rowNumberLabel = '#',
     this.emptyPlaceholder,
+    this.emphasizeLastColumn = true,
   });
 
   final PdfUi ui;
@@ -57,6 +59,10 @@ class PdfDataTable {
 
   /// Message shown in place of the body when [rows] is empty.
   final String? emptyPlaceholder;
+
+  /// Sets the final column in bold. On an invoice that column is the line
+  /// amount, which is what a reader scans for.
+  final bool emphasizeLastColumn;
 
   /// Builds columns from plain header strings, giving the first column twice
   /// the width and right-aligning every numeric column after it.
@@ -123,16 +129,33 @@ class PdfDataTable {
       children: [
         _headerRow(order),
         for (var r = 0; r < data.length; r++)
-          _bodyRow(order, ui.isRtl ? data[r].reversed.toList() : data[r], r),
+          _bodyRow(
+            order,
+            ui.isRtl ? data[r].reversed.toList() : data[r],
+            r,
+            isLast: r == data.length - 1,
+          ),
       ],
     );
   }
 
   pw.TableRow _headerRow(List<PdfColumnSpec> cols) {
     final theme = ui.theme;
+    final filled = theme.headerStyle == PdfTableHeaderStyle.filled;
+    final background = switch (theme.headerStyle) {
+      PdfTableHeaderStyle.filled => theme.accent,
+      PdfTableHeaderStyle.soft => theme.accentSoft,
+      PdfTableHeaderStyle.underlined => PdfColors.white,
+    };
+
     return pw.TableRow(
       repeat: true,
-      decoration: pw.BoxDecoration(color: theme.accent),
+      decoration: pw.BoxDecoration(
+        color: background,
+        border: pw.Border(
+          bottom: pw.BorderSide(color: theme.accent, width: 1.2),
+        ),
+      ),
       children: [
         for (final column in cols)
           pw.Container(
@@ -140,15 +163,12 @@ class PdfDataTable {
             alignment: _alignment(column.align),
             padding: pw.EdgeInsets.symmetric(
               horizontal: theme.spacing * 0.6,
-              vertical: theme.spacing * 0.4,
+              vertical: theme.spacing * 0.45,
             ),
-            child: ui.text(
+            child: ui.microLabel(
               column.label,
-              size: theme.captionSize + 0.5,
-              color: theme.onAccent,
-              bold: true,
+              color: filled ? theme.onAccent : theme.accent,
               align: _textAlign(column.align),
-              maxLines: 2,
             ),
           ),
       ],
@@ -158,15 +178,19 @@ class PdfDataTable {
   pw.TableRow _bodyRow(
     List<PdfColumnSpec> cols,
     List<String> cells,
-    int index,
-  ) {
+    int index, {
+    bool isLast = false,
+  }) {
     final theme = ui.theme;
     final striped = theme.showZebraStripes && index.isOdd;
     return pw.TableRow(
       decoration: pw.BoxDecoration(
         color: striped ? theme.zebra : PdfColors.white,
         border: pw.Border(
-          bottom: pw.BorderSide(color: theme.border, width: theme.borderWidth),
+          bottom: pw.BorderSide(
+            color: isLast ? theme.accentMuted : theme.border,
+            width: isLast ? theme.borderWidth * 1.6 : theme.borderWidth,
+          ),
         ),
       ),
       children: [
@@ -181,6 +205,7 @@ class PdfDataTable {
             child: ui.bidiText(
               i < cells.length ? cells[i] : '',
               align: _textAlign(cols[i].align),
+              bold: emphasizeLastColumn && i == cols.length - 1,
             ),
           ),
       ],

@@ -46,6 +46,19 @@ class PdfMargin {
   );
 }
 
+/// How the item table's header row is drawn.
+enum PdfTableHeaderStyle {
+  /// Solid accent bar with reversed text. High contrast, heavier on the page.
+  filled,
+
+  /// Pale accent wash with accent-colored labels over a firm accent rule.
+  /// Reads lighter and lets the figures dominate — the default.
+  soft,
+
+  /// No fill at all; the header sits on a rule. For minimal stationery.
+  underlined,
+}
+
 /// Visual design tokens shared by every template.
 ///
 /// A theme owns colors, type scale and spacing so that templates never
@@ -67,6 +80,9 @@ class PdfTheme {
     this.spacing = 8.0,
     this.radius = 4.0,
     this.borderWidth = 0.6,
+    this.labelTracking = 0.7,
+    this.titleTracking = 0.0,
+    this.headerStyle = PdfTableHeaderStyle.soft,
     this.tableHeaderHeight = 26.0,
     this.tableRowHeight = 22.0,
     this.showZebraStripes = true,
@@ -86,6 +102,7 @@ class PdfTheme {
         border: const PdfColor.fromInt(0xFF999999),
         borderWidth: 0.8,
         radius: 0.0,
+        headerStyle: PdfTableHeaderStyle.filled,
       );
 
   /// No fills, hairline rules only. Ideal for pre-printed stationery.
@@ -97,6 +114,7 @@ class PdfTheme {
         border: const PdfColor.fromInt(0xFFCCCCCC),
         showZebraStripes: false,
         radius: 0.0,
+        headerStyle: PdfTableHeaderStyle.underlined,
       );
 
   /// Brand color used for the title bar, table header and total row.
@@ -135,6 +153,32 @@ class PdfTheme {
   /// Hairline thickness.
   final double borderWidth;
 
+  /// Extra space between letters of small uppercase labels — `BILL TO`,
+  /// `NOTES`, column headers. Tracking is what makes short caps read as a
+  /// deliberate label rather than shouted body text.
+  final double labelTracking;
+
+  /// Tracking applied to the document title. Large type usually wants a
+  /// slightly negative value; the default leaves it alone.
+  final double titleTracking;
+
+  /// How the item table header is drawn.
+  final PdfTableHeaderStyle headerStyle;
+
+  /// A pale wash of [accent], used behind soft table headers and stamps.
+  PdfColor get accentSoft => mix(accent, PdfColors.white, 0.92);
+
+  /// A muted wash of [accent] for keylines that should read as brand color
+  /// without competing with text.
+  PdfColor get accentMuted => mix(accent, PdfColors.white, 0.55);
+
+  /// Linear blend of two colors, `t` running from [a] to [b].
+  static PdfColor mix(PdfColor a, PdfColor b, double t) => PdfColor(
+    a.red + (b.red - a.red) * t,
+    a.green + (b.green - a.green) * t,
+    a.blue + (b.blue - a.blue) * t,
+  );
+
   /// Table metrics.
   final double tableHeaderHeight;
   final double tableRowHeight;
@@ -158,6 +202,9 @@ class PdfTheme {
     double? spacing,
     double? radius,
     double? borderWidth,
+    double? labelTracking,
+    double? titleTracking,
+    PdfTableHeaderStyle? headerStyle,
     double? tableHeaderHeight,
     double? tableRowHeight,
     bool? showZebraStripes,
@@ -178,6 +225,9 @@ class PdfTheme {
       spacing: spacing ?? this.spacing,
       radius: radius ?? this.radius,
       borderWidth: borderWidth ?? this.borderWidth,
+      labelTracking: labelTracking ?? this.labelTracking,
+      titleTracking: titleTracking ?? this.titleTracking,
+      headerStyle: headerStyle ?? this.headerStyle,
       tableHeaderHeight: tableHeaderHeight ?? this.tableHeaderHeight,
       tableRowHeight: tableRowHeight ?? this.tableRowHeight,
       showZebraStripes: showZebraStripes ?? this.showZebraStripes,
