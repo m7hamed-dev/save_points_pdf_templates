@@ -21,8 +21,8 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
-# Example app (local development only)
-/example/
+# The example app is tracked (pub.dev scores it and it guards the public API);
+# its own .gitignore excludes build output.
 
 # Flutter/Dart/Pub related
 # Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.

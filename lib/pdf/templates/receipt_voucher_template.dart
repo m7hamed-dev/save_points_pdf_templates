@@ -1,83 +1,115 @@
-import 'dart:typed_data';
-
 import 'package:pdf/widgets.dart' as pw;
-import 'package:save_points_pdf_templates/pdf/core/extensions/dots.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/spacing.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/text.dart';
 import 'package:save_points_pdf_templates/pdf/models/pdf_receipt_voucher_model.dart';
 import 'package:save_points_pdf_templates/pdf/templates/base_template.dart';
 
+/// A receipt voucher (سند قبض): the amount received, from whom, for what.
+///
+/// Laid out the way a paper voucher is — a prominent amount block, dotted
+/// fill-in lines and two signature slots — rather than as a table.
 class ReceiptVoucherTemplate extends BaseTemplate<ReceiptVoucherModel> {
   ReceiptVoucherTemplate({
     required super.data,
     required super.pdfConfig,
     super.title,
+    super.qrCode,
+    super.qrCodeSize,
+    super.theme,
+    super.pageFormat,
+    this.signatureLabels,
   });
 
-  late final fontColor = pdfConfig.primaryColor;
-
-  pw.Widget get date =>
-      data.date!.toIso8601String().text(fontSize: 16.0, color: primaryColor);
+  /// Overrides the default `Received by` / `Payer` labels.
+  final List<String>? signatureLabels;
 
   @override
-  pw.Widget body(pw.Context context) {
-    /// amount with currency
-    final amount = '${data.amount} ${pdfConfig.currency}';
+  pw.Widget? header(pw.Context context) => sections.documentHeader(
+    titleEn: title.isNotEmpty ? title : data.type.english,
+    titleAr: arabicTitle(data.type.arabic),
+    company: company,
+    logo: logo,
+    logoSize: pdfConfig.logoSize,
+    documentNumber: data.id,
+    documentNumberLabel: tr('No.', 'رقم'),
+  );
 
-    ///
-    return pw.Column(
-      // crossAxisAlignment: pw.CrossAxisAlignment.end,
+  @override
+  List<pw.Widget> body(pw.Context context) => [
+    ui.gap(2),
+    _amountBlock(),
+    ui.gap(2),
+    ui.card(
+      child: pw.Column(
+        crossAxisAlignment: ui.crossStart,
+        children: [
+          ui.dottedField(
+            tr('Received from', 'استلمنا من السيد / السيدة'),
+            data.payerName,
+          ),
+          ui.dottedField(tr('Amount', 'مبلغ وقدره'), format.money(data.amount)),
+          if (data.amountInWords?.isNotEmpty ?? false)
+            ui.dottedField(tr('In words', 'فقط وقدره'), data.amountInWords!),
+          ui.dottedField(
+            tr('Payment method', 'وذلك عن طريق'),
+            data.paymentMethod,
+          ),
+          ui.dottedField(tr('For', 'وذلك عن'), data.statement),
+          ui.dottedField(tr('Date', 'بتاريخ'), format.longDate(data.date)),
+          if (data.reference?.isNotEmpty ?? false)
+            ui.dottedField(tr('Reference', 'المرجع'), data.reference!),
+        ],
+      ),
+    ),
+    if (data.notes?.isNotEmpty ?? false) ...[
+      ui.gap(1.5),
+      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+    ],
+    ui.gap(3),
+    sections.signatures(
+      signatureLabels ??
+          [
+            '${tr('Received by', 'المستلم')}: ${data.receiverName}',
+            '${tr('Payer', 'المسلّم')}: ${data.payerName}',
+          ],
+    ),
+  ];
+
+  /// The figure, set large in an accent panel — the one thing a reader of a
+  /// voucher looks for first.
+  pw.Widget _amountBlock() {
+    return pw.Row(
       children: [
-        12.0.height(),
-        'تاريخ الاستلام'.dots(value: date.toString()),
-        12.0.height(),
-        'استلمنا من السيد / السيدة'.dots(value: data.payerName),
-        12.0.height(),
-        'وذلك عن عن طريق'.dots(value: data.paymentMethod),
-        12.0.height(),
-        'المبلغ'.dots(value: amount),
-      ],
-    );
-  }
-
-  @override
-  pw.Widget footer(pw.Context context) {
-    return pw.Column(children: [pw.Text('Footer')]);
-  }
-
-  @override
-  pw.Widget header(pw.Context context, {Uint8List? logo}) {
-    return pw.Column(
-      children: [
-        /// divier
-        pw.Divider(color: fontColor, thickness: 18.0),
-        22.0.height(),
-
-        /// English type
-        data.type.english.text(
-          fontSize: 24.0,
-          fontWeight: pw.FontWeight.bold,
-          color: fontColor,
+        pw.Expanded(
+          child: ui.card(
+            padding: theme.spacing * 1.5,
+            background: theme.accent,
+            borderColor: theme.accent,
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                ui.text(
+                  tr('AMOUNT RECEIVED', 'المبلغ المستلم'),
+                  color: theme.onAccent,
+                  bold: true,
+                  size: theme.headingSize,
+                ),
+                ui.gapX(),
+                ui.text(
+                  format.money(data.amount),
+                  color: theme.onAccent,
+                  bold: true,
+                  size: theme.titleSize,
+                ),
+              ],
+            ),
+          ),
         ),
-
-        12.0.height(),
-
-        /// Arabic type
-        data.type.arabic.text(
-          fontSize: 24.0,
-          fontWeight: pw.FontWeight.bold,
-          color: fontColor,
-          // font: font,
-        ),
-        data.id.text(fontSize: 18.0),
-        pw.Divider(color: fontColor),
-
-        /// date and time
-        date.toString().text(color: fontColor),
-
-        /// notes
-        if (data.notes != null) data.notes!.text(),
-        pw.Divider(color: fontColor),
+        if (qrCode.isNotEmpty) ...[
+          ui.gapX(),
+          ui.card(
+            padding: theme.spacing * 0.6,
+            child: ui.qr(qrCode, size: qrCodeSize),
+          ),
+        ],
       ],
     );
   }

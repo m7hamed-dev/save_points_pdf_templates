@@ -1,27 +1,34 @@
 name: save_points_pdf_templates
-description: Production-ready Flutter package for printing invoices, receipts, vouchers, inventory documents, and POS reports with Arabic/RTL support.
-version: 0.1.0
+description: >-
+  Printable business documents for Flutter — invoices, expense records,
+  receipt vouchers and tabular reports — rendered to PDF with Arabic/RTL
+  support, a themeable design system and page-aware tables.
+version: 0.2.0
 homepage: https://github.com/m7hamed-dev/save_points_pdf_templates
+repository: https://github.com/m7hamed-dev/save_points_pdf_templates
+issue_tracker: https://github.com/m7hamed-dev/save_points_pdf_templates/issues
+
+topics:
+  - pdf
+  - invoice
+  - printing
+  - arabic
 
 environment:
-  sdk: ^3.11.5
-  flutter: ">=3.16.0"
+  sdk: ^3.7.0
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  barcode: ^2.2.9
-  esc_pos_utils_plus: ^2.0.4
-  intl: ^0.20.2
-  meta: ^1.16.0
+  intl: ">=0.19.0 <0.21.0"
   pdf: ^3.11.3
   printing: ^5.14.2
-  qr: ^3.0.2
 
 dev_dependencies:
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

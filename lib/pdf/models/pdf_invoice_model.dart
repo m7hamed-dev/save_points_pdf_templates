@@ -1,17 +1,36 @@
-import 'package:save_points_pdf_templates/pdf/models/pdf_invoice_item.dart';
+import 'package:save_points_pdf_templates/pdf/models/base/pdf_base_invoice_model.dart';
+import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
+import 'package:save_points_pdf_templates/pdf/models/pdf_invoice_types.dart';
 
-class PdfInvoiceModel {
-  const PdfInvoiceModel({
-    required this.invoiceNo,
-    required this.customerName,
-    required this.date,
-    required this.items,
-  });
+export 'package:save_points_pdf_templates/pdf/models/base/pdf_invoice_item_model.dart';
+export 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 
-  final String invoiceNo;
-  final String customerName;
-  final DateTime date;
-  final List<PdfInvoiceItem> items;
+/// The smallest useful invoice: a number, a customer name, a date and lines.
+///
+/// Reach for `PdfSaleInvoiceModel` when you need discounts, tax, payment
+/// state or full customer details.
+class PdfInvoiceModel extends PdfItemizedInvoiceModel {
+  PdfInvoiceModel({
+    required String invoiceNo,
+    required String customerName,
+    required DateTime super.date,
+    required super.items,
+    super.notes,
+    super.title,
+    super.discount,
+    super.tax,
+    super.paymentMethod,
+    super.total,
+    super.paidAmount,
+  }) : super(
+         id: invoiceNo,
+         type: PdfInvoiceType.salesInvoice,
+         customer: PdfPartyModel(name: customerName),
+       );
 
-  double get total => items.fold(0, (sum, item) => sum + item.total);
+  /// Alias of [PdfBaseInvoiceModel.id].
+  String get invoiceNo => id;
+
+  /// Alias of `customer.name`.
+  String get customerName => customer.name;
 }

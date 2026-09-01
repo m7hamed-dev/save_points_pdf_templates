@@ -1,52 +1,56 @@
-# analysis_options.yaml
 # Reference: https://dart.dev/guides/language/analysis-options
-# Reference: https://pub.dev/packages/flutter_lints
-
 include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - example/build/**
 
 linter:
   rules:
-    # ====== Performance & Const Usage ======
+    # ── Performance & const usage ──────────────────────────────────────────
     prefer_const_constructors: true
     prefer_const_literals_to_create_immutables: true
     avoid_redundant_argument_values: true
 
-    # ====== Code Consistency ======
-    avoid_print: true                   # Use logger instead of print for production code
-    prefer_single_quotes: true          # Keep quotes consistent
-    always_use_package_imports: true    # Avoid relative imports for better refactoring
+    # ── Consistency ────────────────────────────────────────────────────────
+    avoid_print: true
+    prefer_single_quotes: true
+    always_use_package_imports: true
+    directives_ordering: true
+    sort_pub_dependencies: true
 
-    # ====== Style & Readability ======
-    sort_child_properties_last: true    # In widgets, put child/children last for clarity
-    require_trailing_commas: true       # Helps with cleaner git diffs and formatting
-    prefer_final_locals: true           # Make local variables final when possible
-    prefer_final_fields: true           # Make class fields final when possible
-    unnecessary_this: true              # Remove unnecessary `this.` prefixes
+    # ── Style & readability ────────────────────────────────────────────────
+    sort_child_properties_last: true
+    require_trailing_commas: true
+    prefer_final_locals: true
+    prefer_final_fields: true
+    unnecessary_this: true
+    unnecessary_new: true
+    unnecessary_statements: true
+    prefer_void_to_null: true
 
-    # ====== Safety ======
-    prefer_null_aware_operators: true
+    # ── Safety ─────────────────────────────────────────────────────────────
+    avoid_dynamic_calls: true
     avoid_types_as_parameter_names: true
+    prefer_null_aware_operators: true
+    unnecessary_null_aware_assignments: true
+    unrelated_type_equality_checks: true
+    test_types_in_equals: true
+    hash_and_equals: true
+    no_duplicate_case_values: true
+    valid_regexps: true
 
-    # ====== Deprecation & Best Practices ======
-    # These rules help catch potential issues and deprecated patterns
-    avoid_dynamic_calls: true           # Avoid dynamic method calls
-    avoid_web_libraries_in_flutter: true # Avoid web-specific libraries in Flutter
-    cancel_subscriptions: true          # Ensure subscriptions are cancelled
-    close_sinks: true                   # Ensure sinks are closed
-    comment_references: true            # Ensure comment references are valid
-    control_flow_in_finally: true       # Avoid control flow in finally blocks
-    empty_catches: true                 # Avoid empty catch blocks
-    empty_statements: true              # Avoid empty statements
-    hash_and_equals: true               # Ensure proper hash and equals implementation
-    # /invariant_booleans: true            # Avoid redundant boolean expressions
-    no_duplicate_case_values: true      # Avoid duplicate case values
-    prefer_void_to_null: true           # Prefer void over null for callbacks
-    test_types_in_equals: true          # Ensure proper type checking in equals
-    throw_in_finally: true              # Avoid throwing in finally blocks
-    unnecessary_new: true               # Remove unnecessary 'new' keywords
-    unnecessary_null_aware_assignments: true # Remove unnecessary null-aware assignments
-    unnecessary_statements: true        # Remove unnecessary statements
-    unrelated_type_equality_checks: true # Avoid unrelated type equality checks
-    use_build_context_synchronously: true # Ensure proper BuildContext usage
-    use_rethrow_when_possible: true     # Use rethrow instead of throw
-    valid_regexps: true                 # Ensure valid regular expressions
+    # ── Async & resources ──────────────────────────────────────────────────
+    cancel_subscriptions: true
+    close_sinks: true
+    use_build_context_synchronously: true
+    control_flow_in_finally: true
+    throw_in_finally: true
+    use_rethrow_when_possible: true
+    empty_catches: true
+    empty_statements: true
+
+    # ── API documentation ──────────────────────────────────────────────────
+    comment_references: true
+    public_member_api_docs: false

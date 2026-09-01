@@ -1,123 +1,117 @@
-import 'dart:typed_data';
-
 import 'package:pdf/widgets.dart' as pw;
-import 'package:save_points_pdf_templates/pdf/core/extensions/date_table.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/header_divider.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/image.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/pdf_qr.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/spacing.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/text.dart';
-import 'package:save_points_pdf_templates/pdf/core/extensions/widgets_in_column.dart';
-import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_company_to_widget.dart';
-import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_customer_to_widget.dart';
+import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_data_table.dart';
+import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_ui.dart';
 import 'package:save_points_pdf_templates/pdf/models/pdf_list_string_model.dart';
 import 'package:save_points_pdf_templates/pdf/templates/base_template.dart';
 
+/// A generic tabular document built from raw strings.
+///
+/// You supply headers and rows, the template supplies the masthead, styling,
+/// pagination and footer. Use it for reports, statements and stock counts —
+/// anything that is a table and has no dedicated model.
+///
+/// ```dart
+/// ListStringsTemplate(
+///   pdfConfig: config,
+///   data: PdfListStringsModel(
+///     title: 'Stock Count',
+///     headers: const ['SKU', 'Item', 'Counted'],
+///     items: rows,
+///     summary: const {'Lines': '128'},
+///   ),
+/// );
+/// ```
 class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
   ListStringsTemplate({
     required super.data,
     required super.pdfConfig,
-    required super.headers,
-
-    /// super properties
-    // super.company,
+    super.headers,
+    super.title,
     super.qrCode,
+    super.qrCodeSize,
+    super.theme,
+    super.pageFormat,
+    this.showRowNumbers = true,
   });
 
-  /// local variables
-  late final fontColor = pdfConfig.primaryColor;
-  late final currency = pdfConfig.currency;
-  late final company = pdfConfig.company;
+  /// Prepends a `#` column to the table.
+  final bool showRowNumbers;
+
+  /// Headers passed to the template take precedence over the model's.
+  List<String> get effectiveHeaders =>
+      headers.isNotEmpty ? headers : data.headers;
 
   @override
-  pw.Widget header(pw.Context context, {Uint8List? logo}) {
-    return pw.Column(
-      children: [
-        /// divier
-        // data.type.arabic.headerDivider(fontColor: fontColor),
+  pw.Widget? header(pw.Context context) => sections.documentHeader(
+    titleEn: title.isNotEmpty ? title : data.displayTitle,
+    titleAr: arabicTitle(data.displayTitleAr),
+    company: company,
+    logo: logo,
+    logoSize: pdfConfig.logoSize,
+    documentNumber: data.id,
+    documentNumberLabel: tr('No.', 'رقم'),
+  );
 
-        // space
-        // 24.0.height(),
+  @override
+  List<pw.Widget> body(pw.Context context) => [
+    ui.gap(1.5),
+    if (data.customer.isNotEmpty || _meta.isNotEmpty || qrCode.isNotEmpty) ...[
+      sections.partyAndMeta(
+        party: data.customer,
+        partyLabel: tr('FOR', 'إلى'),
+        meta: _meta,
+        qrData: qrCode,
+        qrSize: qrCodeSize,
+      ),
+      ui.gap(1.5),
+    ],
+    // Its own block so a long report breaks across pages inside the table.
+    _table(),
+    if (data.summary.isNotEmpty) ...[ui.gap(1.5), _summary()],
+    if (data.notes?.isNotEmpty ?? false) ...[
+      ui.gap(1.5),
+      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+    ],
+  ];
 
-        /// English type
-        data.type.english.headerDivider(
-          fontSize: 24.0,
-          fontWeight: .bold,
-          fontColor: fontColor,
-        ),
+  Map<String, String> get _meta => {
+    if (data.date != null) tr('Date', 'التاريخ'): format.longDate(data.date),
+    if (data.reference?.isNotEmpty ?? false)
+      tr('Reference', 'المرجع'): data.reference!,
+    tr('Rows', 'عدد السطور'): format.quantity(data.items.length.toDouble()),
+  };
 
-        // pw.Divider(color: fontColor, thickness: .2),
-        8.0.height(),
+  pw.Widget _table() {
+    final columns =
+        effectiveHeaders.isEmpty
+            ? <PdfColumnSpec>[PdfColumnSpec(tr('Value', 'القيمة'))]
+            : [
+              for (var i = 0; i < effectiveHeaders.length; i++)
+                PdfColumnSpec(
+                  effectiveHeaders[i],
+                  flex: i < data.columnFlex.length ? data.columnFlex[i] : 1,
+                  align: i == 0 ? PdfCellAlign.start : PdfCellAlign.center,
+                ),
+            ];
 
-        // data.id.text(fontSize: 18.0),
-        pw.Row(
-          children: [
-            if (qrCode.isNotEmpty) qrCode.qrCode(qrCodeSize: 50.0),
-            if (data.customer.name.isNotEmpty)
-              pw.Expanded(child: data.customer.toCustomerWidget()),
-          ],
-        ),
+    return PdfDataTable(
+      ui: ui,
+      columns: columns,
+      rows: data.items,
+      rowNumbers: showRowNumbers,
+      emptyPlaceholder: tr('No rows', 'لا توجد بيانات'),
+    ).build();
+  }
 
-        8.0.height(),
-        pw.Divider(color: fontColor, thickness: .2),
-        8.0.height(),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            /// title
-            data.title.text(
-              fontSize: 24.0,
-              fontWeight: .bold,
-              color: fontColor,
-              textAlign: .center,
-            ),
-            [
-              if (logo != null) logo.toImage(size: 40.0),
-              if (company != null) company!.toCompanyWidget(),
-              6.0.width(),
-            ].inColumn(),
-          ],
-        ),
-        8.0.height(),
-
-        /// date and time
-        // DateTime.now().toFormattedString().dateTime(),
-        DateTime.now().toIso8601String().text(
-          fontSize: 16.0,
-          color: primaryColor,
-        ),
-        16.0.height(),
-        // pw.Divider(color: fontColor),
-      ],
+  pw.Widget _summary() {
+    final entries = data.summary.entries.toList();
+    return sections.totalsPanelText(
+      lines: {
+        for (final entry in entries.take(entries.length - 1))
+          entry.key: entry.value,
+      },
+      totalLabel: entries.last.key,
+      totalValue: entries.last.value,
     );
-  }
-
-  @override
-  pw.Widget body(pw.Context context) {
-    final items = getItems();
-    return PdfDateTableExtension.customDateTable(
-      headers: headers,
-      data: items,
-      borderWidth: pdfConfig.dataTableBorderWidth,
-      borderColor: primaryColor,
-      headerHeight: pdfConfig.dataTableHeaderHeight,
-      headerBackgroundColor: pdfConfig.dataTableHeaderBackgroundColor,
-      cellHeight: pdfConfig.dataTableCellHeight,
-      // borderColor: pdfConfig.dataTableBorderColor,
-      // belowBody: data.toSummeryPaymentWidget(config: pdfConfig),
-    );
-  }
-
-  @override
-  pw.Widget footer(pw.Context context) {
-    return pw.Container();
-    // return data.toSummeryPaymentWidget(config: pdfConfig);
-  }
-  // pw.Widget footer(pw.Context context) => data.toSummeryPaymentWidget();
-
-  List<List<String>> getItems() {
-    return data.items.map((e) {
-      return e.map((e) => e).toList();
-    }).toList();
   }
 }

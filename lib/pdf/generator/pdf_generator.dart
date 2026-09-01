@@ -1,49 +1,68 @@
-import 'package:flutter/services.dart';
-import 'package:pdf/pdf.dart';
+import 'dart:typed_data';
+
 import 'package:pdf/widgets.dart' as pw;
+import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_config.dart';
 import 'package:save_points_pdf_templates/pdf/templates/base_template.dart';
 
+/// Renders a [BaseTemplate] into PDF bytes.
+///
+/// ```dart
+/// final bytes = await PdfGenerator.generate(template: myTemplate);
+/// ```
+///
+/// The generator owns document assembly only. Fonts, the logo and locale
+/// data belong to [PdfConfig] and are loaded by [PdfConfig.init], which this
+/// method calls for you — repeated renders reuse the same decoded assets
+/// instead of hitting the asset bundle again.
 class PdfGenerator {
-  /// logo
-  static Uint8List? logo;
+  const PdfGenerator._();
 
-  /// generate the pdf
+  /// Builds the document and returns its bytes, ready to save, share or print.
   static Future<Uint8List> generate<T>({
     required BaseTemplate<T> template,
+    String? title,
+    String? author,
+    String? subject,
+    String? creator,
+
+    /// Safety valve: rendering aborts past this many pages instead of looping
+    /// on content that can never fit.
+    int maxPages = 200,
   }) async {
-    /// get the pdf config
-    final pdfConfig = template.pdfConfig;
+    final config = template.pdfConfig;
+    await config.init();
 
-    ///
-    await pdfConfig.init();
+    final document = pw.Document(
+      title: title ?? template.title,
+      author: author ?? config.company?.name,
+      subject: subject,
+      creator: creator ?? 'save_points_pdf_templates',
+    );
 
-    /// get the font and logo path
-    final font = pdfConfig.font;
-    final logoPath = pdfConfig.logoPath;
-
-    ///
-    if (logoPath.isNotEmpty) {
-      if (logo == null) {
-        final bytes = await rootBundle.load(logoPath);
-        final uint8List = bytes.buffer.asUint8List();
-        logo = uint8List;
-      }
-    }
-
-    final pdf = pw.Document();
-
-    pdf.addPage(
+    document.addPage(
       pw.MultiPage(
-        // textDirection: pw.TextDirection.rtl,
-        theme: pw.ThemeData.withFont(base: font, bold: font),
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: template.pageFormat,
+        margin: template.theme.margin.insets,
+        textDirection: config.textDirection,
+        theme: pw.ThemeData.withFont(
+          base: config.font,
+          bold: config.boldFont,
+          italic: config.font,
+          boldItalic: config.boldFont,
+          fontFallback: config.fontFallbacks,
+        ),
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-        header: (context) => template.header(context, logo: logo),
-        build: (context) => [template.body(context)],
-        footer: (context) => template.footer(context),
+        header: (context) => template.header(context) ?? pw.SizedBox(),
+        footer: (context) => template.footer(context) ?? pw.SizedBox(),
+        maxPages: maxPages,
+        build:
+            (context) => [
+              ...template.body(context),
+              ...template.appendix(context),
+            ],
       ),
     );
 
-    return pdf.save();
+    return document.save();
   }
 }

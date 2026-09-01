@@ -1,0 +1,25 @@
+name: save_points_pdf_templates_example
+description: Example app for save_points_pdf_templates.
+publish_to: 'none'
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  save_points_pdf_templates:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/Cairo/Cairo-Regular.ttf
+    - assets/fonts/Cairo/Cairo-Bold.ttf
+    - assets/fonts/Inter/Inter-Regular.ttf
+    - assets/fonts/Inter/Inter-Bold.ttf

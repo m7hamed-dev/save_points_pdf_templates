@@ -1,35 +1,30 @@
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_base_invoice_model.dart';
-import 'package:save_points_pdf_templates/pdf/models/base/pdf_invoice_item_model.dart';
-import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 import 'package:save_points_pdf_templates/pdf/models/pdf_invoice_types.dart';
 
 export 'package:save_points_pdf_templates/pdf/models/base/pdf_invoice_item_model.dart';
-
-///
 export 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 
-/// ===============
-/// Sales Invoice
-/// ===============
-
-class PdfExpensesInvoiceModel extends PdfBaseInvoiceModel {
+/// An expense document: costs paid to a supplier or an employee.
+///
+/// Structurally identical to a sales invoice — the difference is the label
+/// and the party, which is a payee rather than a customer.
+class PdfExpensesInvoiceModel extends PdfItemizedInvoiceModel {
   const PdfExpensesInvoiceModel({
     required super.id,
     required super.date,
+    required super.items,
+    super.customer,
     super.notes,
-    required this.customer,
-    required this.items,
-    required this.discount,
-    required this.tax,
-    required this.total,
-    required this.paymentMethod,
-  }) : super(type: InvoiceType.expensesInvoice);
-  final PdfPartyModel customer;
-  final List<PdfInvoiceItemModel> items;
+    super.title,
+    super.reference,
+    super.discount,
+    super.tax,
+    super.paymentMethod,
+    super.total,
+    super.paidAmount,
+    this.category,
+  }) : super(type: PdfInvoiceType.expensesInvoice);
 
-  final double discount;
-  final double tax;
-  final double total;
-
-  final String paymentMethod;
+  /// Optional expense category — `Rent`, `Utilities`, `Salaries`.
+  final String? category;
 }

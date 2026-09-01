@@ -1,730 +1,396 @@
-# save_points_pdf_templates
+<div align="center">
 
-Production-ready Flutter package for rendering and printing business documents — invoices, receipts, vouchers, inventory reports, and POS output — with **Arabic / RTL** support and thermal ESC/POS output.
+# Save Points PDF Templates
 
-[![pub package](https://img.shields.io/pub/v/save_points_pdf_templates.svg)](https://pub.dev/packages/save_points_pdf_templates)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+### Printable business documents for Flutter — invoices, expense records, vouchers and reports — with first-class Arabic/RTL rendering
 
----
+[![Pub Version](https://img.shields.io/pub/v/save_points_pdf_templates?style=flat-square&logo=dart&color=0175C2)](https://pub.dev/packages/save_points_pdf_templates)
+[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.29-blue?style=flat-square&logo=flutter)](https://flutter.dev)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/m7hamed-dev/save_points_pdf_templates/pulls)
 
-## Why this package?
+[**📚 Documentation**](https://github.com/m7hamed-dev/save_points_pdf_templates#readme) · [**🧪 Example app**](example) · [**🐛 Report Bug**](https://github.com/m7hamed-dev/save_points_pdf_templates/issues) · [**✨ Request Feature**](https://github.com/m7hamed-dev/save_points_pdf_templates/issues)
 
-Building printable documents in Flutter usually means wiring `pdf`, `printing`, fonts, locales, and printer transports yourself. This package gives you:
-
-- **Typed domain models** for common business documents (sales/purchase invoices, receipts, vouchers, stock moves, labels, custom layouts).
-- **Template engine** that renders to **PDF** or **ESC/POS** from the same document model.
-- **Arabic-first layout** with RTL, bilingual fields (`name` / `nameAr`), and explicit font injection (you provide TTF files).
-- **Print orchestration** via `PrintService` — preview, system print dialog, network/bluetooth thermal printers.
-- **Clean architecture** — domain, application, infrastructure, and presentation layers you can extend.
+</div>
 
 ---
 
-## Features
+Hand it a typed model, get a laid-out PDF. The package owns the parts that are
+tedious to get right — page breaks inside long tables, repeating table headers,
+right-to-left mirroring, mixed Arabic/Latin text, money and date formatting —
+so your code only describes the document.
 
-| Area | Details |
-|------|---------|
-| **Documents** | Sales & purchase invoices, receipts, expense/revenue vouchers, inventory reports, stock documents, product labels, custom documents |
-| **Output** | PDF (A4, A5, Letter, 58/80 mm roll) and ESC/POS thermal |
-| **Templates** | `ModernArabicTemplate` (RTL Arabic), `CompactEnglishTemplate` (LTR English), custom presets via `ContextualPrintTemplate` |
-| **Layout** | `PdfLayoutConfig` margins & compact density; per-print toggles on `TemplateContext` / `PrintOptions` |
-| **Arabic / RTL** | Bilingual fields (`name` / `nameAr`), app-provided Arabic + Latin TTF fonts |
-| **Codes** | QR and Code 128 barcodes (ZATCA-style invoice QR, SKU barcodes, etc.) |
-| **Money & tax** | `Money` value type, line-level tax/discount, document totals |
-| **Printers** | System PDF share/print, network ESC/POS, Bluetooth thermal (platform-dependent) |
-| **Preview** | Native PDF preview via `printing` |
-| **Validation** | Document validation with typed `PrintFailure` / `PrintResult` |
-
----
-
-## Installation
-
-Add to `pubspec.yaml`:
-
-```yaml
-dependencies:
-  save_points_pdf_templates: ^0.1.0
+```dart
+final bytes = await PdfGenerator.generate(
+  template: SaleInvoiceTemplate(data: invoice, pdfConfig: config),
+);
 ```
 
-Or use a path/git dependency while developing:
+## Table of Contents
 
-```yaml
-dependencies:
-  save_points_pdf_templates:
-    path: ../save_points_pdf_templates
-```
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Templates](#-templates)
+- [Configuration](#️-configuration)
+- [Theming](#-theming)
+- [Arabic & RTL](#-arabic--rtl)
+- [Output](#-output)
+- [Custom Templates](#-custom-templates)
+- [Tips & Best Practices](#-tips--best-practices)
+- [Troubleshooting](#-troubleshooting)
+- [Roadmap](#️-roadmap)
+- [Changelog](#-changelog)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-Then:
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| 🧾 **Typed documents** | Sales invoices, expense records, receipt vouchers, minimal invoices and free-form tabular reports |
+| 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
+| 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
+| 🎨 **Themeable** | `PdfTheme` drives every color, size and spacing; three presets plus `copyWith` |
+| 🧮 **Totals that add up** | Line and document level discount/tax, computed subtotal, paid and balance due — or pass a total to reproduce server-side figures |
+| 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
+| 🔠 **Your fonts** | No bundled TTFs — point at an asset, hand over a `pw.Font`, and declare fallbacks for missing glyphs |
+| 🖨️ **Preview & share** | A ready-made preview page, plus headless `bytes` / `share` / `print` / `thumbnail` |
+| 🧩 **Composable** | `PdfUi` primitives and `PdfSections` blocks are public — build your own template from the same parts |
+
+## 📦 Installation
 
 ```bash
-flutter pub get
+flutter pub add save_points_pdf_templates
 ```
 
-**Requirements:** Dart SDK `^3.11.5`, Flutter `>=3.16.0`.
+Or add it by hand:
 
----
-
-## Fonts (required — you provide them)
-
-This package **does not ship font files**. PDF rendering needs four TTF faces (Arabic regular/bold + Latin regular/bold). Each app that installs the package must add them.
-
-### Step 1 — Download fonts
-
-Use [Noto Sans Arabic](https://fonts.google.com/noto/specimen/Noto+Sans+Arabic) and [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) (or any Unicode TTF that covers Arabic and Latin), then place in your project:
-
-```
-your_app/
-  assets/fonts/
-    NotoSansArabic-Regular.ttf
-    NotoSansArabic-Bold.ttf
-    NotoSans-Regular.ttf
-    NotoSans-Bold.ttf
+```yaml
+dependencies:
+  save_points_pdf_templates: ^0.2.0
 ```
 
-### Step 2 — Declare in your app `pubspec.yaml`
+> [!IMPORTANT]
+> The package ships **no fonts**. The built-in PDF fonts are Latin-only, so
+> Arabic renders as empty boxes until you supply a TTF. Declare one in your
+> app and pass its path — see [Arabic & RTL](#-arabic--rtl).
+
+## 🚀 Quick Start
+
+**1. Declare a font in your app's `pubspec.yaml`**
 
 ```yaml
 flutter:
   assets:
-    - assets/fonts/NotoSansArabic-Regular.ttf
-    - assets/fonts/NotoSansArabic-Bold.ttf
-    - assets/fonts/NotoSans-Regular.ttf
-    - assets/fonts/NotoSans-Bold.ttf
+    - assets/fonts/Cairo/Cairo-Regular.ttf
+    - assets/fonts/Cairo/Cairo-Bold.ttf
 ```
 
-### Step 3 — Load and pass on every print
+**2. Build a config once and keep it** — fonts and the logo are decoded on the
+first render and reused afterwards.
 
 ```dart
-const fontPaths = PdfFontAssetPaths(
-  arabicRegular: 'assets/fonts/NotoSansArabic-Regular.ttf',
-  arabicBold: 'assets/fonts/NotoSansArabic-Bold.ttf',
-  latinRegular: 'assets/fonts/NotoSans-Regular.ttf',
-  latinBold: 'assets/fonts/NotoSans-Bold.ttf',
-);
-
-final fonts = await PdfFontSet.loadFromAssets(fontPaths);
-```
-
-See [`example/lib/app_fonts.dart`](example/lib/app_fonts.dart) for a copy-paste pattern.
-
----
-
-## Quick start
-
-### 1. Initialize at app launch
-
-```dart
-import 'package:flutter/widgets.dart';
-import 'package:save_points_pdf_templates/save_points_pdf_templates.dart';
-
-late final PdfFontSet appFonts;
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  appFonts = await PdfFontSet.loadFromAssets(const PdfFontAssetPaths(
-    arabicRegular: 'assets/fonts/NotoSansArabic-Regular.ttf',
-    arabicBold: 'assets/fonts/NotoSansArabic-Bold.ttf',
-    latinRegular: 'assets/fonts/NotoSans-Regular.ttf',
-    latinBold: 'assets/fonts/NotoSans-Bold.ttf',
-  ));
-  await DocumentDateFormatter.warmUp();
-
-  runApp(const MyApp());
-}
-```
-
-### 2. Build a document
-
-```dart
-final invoice = SalesInvoice(
-  documentId: 'INV-2026-0042',
-  issuedAt: DateTime.now(),
-  company: const CompanyInfo(
-    name: 'Save Points Trading',
-    nameAr: 'شركة نقاط الحفظ للتجارة',
-    address: 'King Fahd Rd, Riyadh',
-    addressAr: 'طريق الملك فهد، الرياض',
+final config = PdfConfig(
+  fontPath: 'assets/fonts/Cairo/Cairo-Regular.ttf',
+  boldFontPath: 'assets/fonts/Cairo/Cairo-Bold.ttf',
+  logoPath: 'assets/images/logo.png',
+  locale: 'ar',
+  currency: 'ر.س',
+  company: const PdfPartyModel(
+    name: 'Save Points',
+    phone: '+966 51 234 5678',
     taxNumber: '300000000000003',
   ),
-  customerName: 'Ahmed Ali',
-  customerNameAr: 'أحمد علي',
-  lineItems: const [
-    LineItem(
-      description: 'Wireless Mouse',
-      descriptionAr: 'فأرة لاسلكية',
-      quantity: 2,
-      unitPrice: Money(75),
-      taxRate: 15,
-    ),
+);
+```
+
+**3. Describe the document**
+
+```dart
+final invoice = PdfSaleInvoiceModel(
+  id: 'INV-2026-0042',
+  date: DateTime.now(),
+  customer: const PdfPartyModel(name: 'Acme Trading Co.'),
+  items: const [
+    PdfInvoiceItemModel(title: 'HP ProBook 450', qty: 3, price: 3200, tax: 480),
+    PdfInvoiceItemModel(title: 'On-site setup', qty: 1.5, price: 400, unit: 'hr'),
   ],
-  subtotal: const Money(150),
-  taxTotal: const Money(22.5),
-  grandTotal: const Money(172.5),
-  zatca: ZatcaInvoiceData(
-    sellerName: 'Save Points Trading',
-    vatRegistrationNumber: '300000000000003',
-    timestamp: DateTime.now(),
-    invoiceTotalWithVat: const Money(172.5),
-    vatAmount: const Money(22.5),
-    invoiceType: ZatcaInvoiceType.standard,
-    buyerVatNumber: '310000000000001',
+  paymentMethod: 'Bank transfer',
+  paidAmount: 5000,
+);
+```
+
+**4. Preview, share or print it**
+
+```dart
+Navigator.of(context).push(MaterialPageRoute(
+  builder: (_) => PdfPreviewPage(
+    template: SaleInvoiceTemplate(data: invoice, pdfConfig: config),
+  ),
+));
+```
+
+## 📄 Templates
+
+| Template | Model | Layout |
+|----------|-------|--------|
+| `SaleInvoiceTemplate` | `PdfSaleInvoiceModel` | Masthead, customer + meta cards, item table, totals panel, notes, signatures |
+| `ExpensesInvoiceTemplate` | `PdfExpensesInvoiceModel` | Same, with a payee card and an expense category |
+| `InvoiceTemplate` | `PdfInvoiceModel` | The minimal invoice — number, customer name, lines; signatures off |
+| `ReceiptVoucherTemplate` | `ReceiptVoucherModel` | Accent amount block, dotted fill-in fields, two signature slots |
+| `ListStringsTemplate` | `PdfListStringsModel` | Free-form table: you supply headers and rows, it supplies the chrome |
+
+<details>
+<summary><b>Free-form tabular reports</b></summary>
+
+```dart
+ListStringsTemplate(
+  pdfConfig: config,
+  data: PdfListStringsModel(
+    id: 'RPT-2026-09',
+    title: 'Monthly Stock Count',
+    date: DateTime.now(),
+    headers: const ['SKU', 'Item', 'On hand', 'Counted'],
+    columnFlex: const [1.4, 3, 1, 1],
+    items: rows,                                   // List<List<String>>
+    summary: const {'Lines': '128', 'Variance': '-12'},
   ),
 );
 ```
 
-### 3. Preview or print
+</details>
+
+<details>
+<summary><b>Receipt vouchers</b></summary>
 
 ```dart
-final printer = PrintService.create(fonts: appFonts);
-
-// Open native PDF preview (context is optional for contextual templates)
-await printer.print(
-  invoice,
-  template: const ModernArabicTemplate(),
-  options: const PrintOptions(previewOnly: true),
-);
-
-// LTR compact English invoice
-await printer.print(
-  invoice,
-  template: const CompactEnglishTemplate(),
-  options: const PrintOptions(previewOnly: true),
-);
-
-// Send to system print dialog
-await printer.print(
-  invoice,
-  template: const ModernArabicTemplate(),
-);
-```
-
-When `fonts` are on `PrintService` and the template implements `ContextualPrintTemplate`, you can omit `context` — the service calls `buildContext` automatically.
-
-Handle results explicitly:
-
-```dart
-final result = await printer.print(invoice, template: const ModernArabicTemplate());
-
-result.fold(
-  onSuccess: (_) => debugPrint('Printed'),
-  onFailure: (e) => debugPrint('Print failed: ${e.message}'),
-);
-```
-
----
-
-## Supported documents
-
-| Model | Use case |
-|-------|----------|
-| `SalesInvoice` | Customer invoices, VAT, QR |
-| `PurchaseInvoice` | Supplier bills |
-| `Receipt` | POS / cash receipts |
-| `ExpenseVoucher` / `RevenueVoucher` | Petty cash & income vouchers |
-| `InventoryReport` | Stock valuation / movement summary |
-| `StockDocument` | Transfers, adjustments |
-| `ProductLabel` | Shelf / barcode labels |
-| `CustomDocument` | Arbitrary title, sections, line items |
-
-All implement `PrintableDocument` with shared fields: `documentId`, `issuedAt`, `company`, `lineItems`, totals, `notes` / `notesAr`, `qrPayload`, `barcodePayload`.
-
----
-
-## Templates
-
-Built-in presets live under `lib/src/templates/presets/`. Both ship a `buildContext` method and work with `PrintService` without a manual `TemplateContext` when `fonts` are configured.
-
-| Template | ID | Direction | Best for |
-|----------|-----|-----------|----------|
-| `ModernArabicTemplate` | `modern_arabic` | RTL (`ar`) | Saudi/Gulf invoices, vouchers, full catalog |
-| `CompactEnglishTemplate` | `compact_english` | LTR (`en`) | English invoices, receipts, purchase orders |
-
-### `ModernArabicTemplate`
-
-Default RTL template with Arabic UI labels (invoice title, column headers, totals, footer).
-
-```dart
-const template = ModernArabicTemplate(
-  paperSize: PaperSize.a4, // or a5, letter, roll80, roll58
-  locale: 'ar',            // use 'en' for English labels, still RTL
-  theme: PdfPrintTheme(primaryHex: '#1565C0'),
-);
-
-await printer.print(invoice, template: template);
-```
-
-### `CompactEnglishTemplate`
-
-LTR English layout with compact margins and no logo by default. Supports sales/purchase invoices, receipts, and custom documents.
-
-```dart
-const template = CompactEnglishTemplate(
-  paperSize: PaperSize.a4,
-  theme: PdfPrintTheme(primaryHex: '#37474F'),
-  layout: PdfLayoutConfig.compact(),
-  showLogo: true, // off by default
-);
-
-await printer.print(invoice, template: template);
-```
-
-Thermal PDF / ESC/POS uses `PdfLayoutConfig.thermal()` and 80 mm roll automatically in `renderEscPos`.
-
-### Layout config (`PdfLayoutConfig`)
-
-Controls PDF page margins and slightly smaller typography when `compact` is true.
-
-| Preset | Margins (H × V) | `compact` |
-|--------|-----------------|-----------|
-| `PdfLayoutConfig()` | 40 × 36 | false |
-| `PdfLayoutConfig.compact()` | 24 × 20 | true |
-| `PdfLayoutConfig.thermal()` | 8 × 12 | true |
-
-**On the template** (e.g. `CompactEnglishTemplate(layout: …)`).
-
-**On the context**:
-
-```dart
-final context = const ModernArabicTemplate()
-    .buildContext(invoice, fonts: appFonts)
-    .copyWith(layout: PdfLayoutConfig.compact());
-```
-
-**Per print via `PrintOptions`** (merged by `PrintService`):
-
-```dart
-await printer.print(
-  invoice,
-  template: const ModernArabicTemplate(),
-  options: const PrintOptions(
-    previewOnly: true,
-    layout: PdfLayoutConfig.compact(),
-    showQr: false,
-    showBarcode: false,
+ReceiptVoucherTemplate(
+  pdfConfig: config,
+  qrCode: 'RV-2026-0031',
+  data: ReceiptVoucherModel(
+    id: 'RV-2026-0031',
+    date: DateTime.now(),
+    payerName: 'Acme Trading Co.',
+    amount: 12500,
+    amountInWords: 'Twelve thousand five hundred Saudi Riyals',
+    paymentMethod: 'Bank transfer',
+    statement: 'Part settlement of invoice INV-2026-0042',
+    receiverName: 'Mohamed Syed',
   ),
 );
 ```
 
-### PDF accent color (`PdfPrintTheme`)
+</details>
 
-Customize the primary accent used in PDFs (header bar, title band, table header, notes highlight). Default is Material blue `#1565C0`.
+## ⚙️ Configuration
 
-**On the template** (same color for every document):
+`PdfConfig` is concrete — the common case needs no subclass.
 
-```dart
-const template = ModernArabicTemplate(
-  theme: PdfPrintTheme(
-    primaryHex: '#2E7D32',       // main accent (e.g. brand green)
-    primaryLightHex: '#E8F5E9',  // optional; auto-lightened if omitted
-  ),
-);
+| Option | Description |
+|--------|-------------|
+| `fontPath` / `boldFontPath` | Asset paths of the TTFs (default: none — built-in Latin font) |
+| `font` / `boldFont` | Ready-made `pw.Font`s, e.g. from `PdfGoogleFonts` — take priority over the paths |
+| `fallbackFontPaths` | Extra TTFs consulted for glyphs the main font lacks |
+| `useBuiltInFallback` | Appends the built-in Latin font to the fallback chain (default: `true`) |
+| `logoPath` / `logoBytes` | Issuer logo, drawn in the masthead |
+| `logoSize` | Edge length of the logo box (default: `46.0`) |
+| `company` | `PdfPartyModel` printed as the issuer |
+| `currency` | Appended to money values (default: `'SAR'`) |
+| `locale` | BCP 47 tag; anything starting with `ar` renders right-to-left (default: `'en'`) |
+| `theme` | `PdfTheme` design tokens (default: `PdfTheme()`) |
+| `pageFormat` | Default page size (default: `PdfPageFormat.a4`) |
+| `strictFonts` | Throw `PdfAssetException` on a missing asset instead of falling back (default: `false`) |
 
-final context = template.buildContext(invoice, fonts: appFonts);
-```
+> [!TIP]
+> Turn `strictFonts` on in release builds. A typo in an asset path otherwise
+> degrades silently to a Latin-only font, and you find out from a customer.
 
-**Per document** via `copyWith`:
-
-```dart
-final context = const ModernArabicTemplate()
-    .buildContext(invoice, fonts: appFonts)
-    .copyWith(
-      theme: const PdfPrintTheme(primaryHex: '#6A1B9A'),
-    );
-```
-
-| `PdfPrintTheme` field | Used for |
-|-----------------------|----------|
-| `primaryHex` | Header accent bar, table header background, title band border tone |
-| `primaryLightHex` | Title band fill, notes box background (derived from primary when omitted) |
-
-Use any `#RRGGBB` hex string. ESC/POS thermal output is unaffected (text-only).
-
-Override individual labels:
+<details>
+<summary><b>Loading fonts from somewhere other than assets</b></summary>
 
 ```dart
-final context = template
-    .buildContext(invoice, fonts: fonts)
-    .withLabels({'thanks': 'Thank you — شكراً'});
-```
-
-Or merge with `copyWith(labels: …)`.
-
-Toggle visibility via `TemplateContext.copyWith`:
-
-```dart
-final context = template.buildContext(invoice, fonts: fonts).copyWith(
-  showLogo: true,
-  showQr: true,
-  showBarcode: false,
-  paperSize: PaperSize.a5,
-  layout: PdfLayoutConfig.compact(),
+final config = PdfConfig(
+  font: await PdfGoogleFonts.cairoRegular(),
+  boldFont: await PdfGoogleFonts.cairoBold(),
+  locale: 'ar',
 );
 ```
 
-### Custom templates
+`CairoPdfFontConfig` is a thin preset over the same class: Arabic locale,
+`SAR`, and Cairo asset paths your app declares.
 
-Implement `PrintTemplate` or extend `BasePrintTemplate` to reuse `PdfDocumentBuilder` / `EscPosDocumentBuilder`.
+</details>
 
-For presets with defaults, extend `ContextualPrintTemplate` so `PrintService` can call `buildContext`:
+## 🎨 Theming
+
+Every color, type size and spacing value lives on `PdfTheme`.
 
 ```dart
-class MyTemplate extends ContextualPrintTemplate {
-  const MyTemplate();
+const PdfTheme.modern();                                  // deep navy, the default
+const PdfTheme.classic();                                 // black rules, no radius
+const PdfTheme.minimal();                                 // hairlines, no fills
+const PdfTheme.modern(accent: PdfColor.fromInt(0xFF00695C));
+```
+
+Tweak a preset instead of writing one from scratch:
+
+```dart
+final theme = const PdfTheme.modern().copyWith(
+  accent: PdfColors.teal700,
+  showZebraStripes: false,
+  margin: const PdfMargin.all(24),
+);
+```
+
+Pass it on the config for every document, or per template to override one:
+
+```dart
+SaleInvoiceTemplate(data: invoice, pdfConfig: config, theme: theme);
+```
+
+## 🌍 Arabic & RTL
+
+Set `locale: 'ar'` and the whole document mirrors: masthead, table columns,
+alignment and the totals panel. Labels switch language through
+`BaseTemplate.tr`, and the Arabic sub-title is dropped automatically when the
+configured font cannot draw Arabic.
+
+> [!WARNING]
+> The renderer reverses whichever script run does not match the paragraph
+> direction — `حاسب محمول HP ProBook` drawn as one right-to-left string comes
+> out as `kooBorP PH`. The package splits mixed values into script runs
+> (`PdfUi.bidiText`) and applies it to table cells, field values and party
+> names. If you build a custom template, use `ui.bidiText` — not `ui.text` —
+> for any value that can mix Arabic and Latin.
+
+Money is rendered as two runs, the figure and the currency, for the same
+reason. Use `ui.money(value)` rather than interpolating a string.
+
+## 📤 Output
+
+```dart
+final bytes  = await PdfDocuments.bytes(template: template);
+final shared = await PdfDocuments.share(template: template, fileName: 'INV-42');
+final job    = await PdfDocuments.printDocument(template: template);
+final png    = await PdfDocuments.thumbnail(template: template, dpi: 96);
+```
+
+`PdfPreviewPage` wraps `printing`'s preview with the share and print actions:
+
+```dart
+PdfPreviewPage(
+  template: template,
+  fileName: 'INV-2026-0042',
+  canChangePageFormat: true,
+);
+```
+
+## 🧩 Custom Templates
+
+Subclass `BaseTemplate<T>` for a new document, or `ItemizedInvoiceTemplate<T>`
+to reuse the invoice layout and change only what differs.
+
+```dart
+class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> {
+  DeliveryNoteTemplate({required super.data, required super.pdfConfig});
 
   @override
-  String get id => 'my_template';
+  String get partyLabel => tr('DELIVER TO', 'تسليم إلى');
 
   @override
-  String get name => 'My Template';
+  List<PdfColumnSpec> get columns => [
+    PdfColumnSpec(tr('Item', 'الصنف'), flex: 4),
+    PdfColumnSpec(tr('Qty', 'الكمية'), align: PdfCellAlign.center),
+  ];
 
   @override
-  TemplateContext buildContext(
-    PrintableDocument document, {
-    required PdfFontSet fonts,
-  }) {
-    return TemplateContext(
-      document: document,
-      fonts: fonts,
-      locale: 'en',
-      textDirection: TextDirection.ltr,
-      layout: const PdfLayoutConfig.compact(),
-    );
-  }
+  List<List<String>> get rows =>
+      [for (final item in data.items) [item.title, format.quantity(item.qty)]];
 }
 ```
 
-Lower-level only (no auto context):
+> [!IMPORTANT]
+> `body` returns a **list** of blocks, not one widget. A page can only break
+> between top-level blocks, so return long content — the item table above all —
+> as its own entry. A table nested inside a column is forced onto one page and
+> a long document will fail to render.
 
-```dart
-class MyTemplate extends BasePrintTemplate {
-  // … same renderPdf delegation as above, but pass TemplateContext manually
-}
-```
+<details>
+<summary><b>The building blocks</b></summary>
 
----
+`ui` (`PdfUi`) — `text`, `bidiText`, `caption`, `heading`, `title`, `money`,
+`pair`, `card`, `badge`, `rule`, `gap`, `inlineField`, `dottedField`, `qr`,
+`barcode`, `logo`.
 
-## ZATCA / Saudi e-invoicing (Phase 1 QR)
+`sections` (`PdfSections`) — `documentHeader`, `partyAndMeta`, `partyCard`,
+`metaCard`, `totalsPanel`, `totalsPanelText`, `notes`, `signatures`,
+`pageFooter`.
 
-[Saudi ZATCA](https://zatca.gov.sa) Phase 1 requires a **TLV-encoded, Base64** QR on tax invoices with five fields:
+`PdfDataTable` — the paginating table, built from `PdfColumnSpec`s.
 
-| Tag | Field |
-|-----|--------|
-| 1 | Seller name |
-| 2 | VAT registration (15 digits) |
-| 3 | Invoice date/time (ISO 8601) |
-| 4 | Invoice total **with** VAT |
-| 5 | VAT amount |
+`format` (`PdfFormatters`) — `money`, `number`, `quantity`, `percent`, `date`,
+`dateTime`, `longDate`.
 
-### Encode QR payload
+</details>
 
-```dart
-final zatca = ZatcaInvoiceData(
-  sellerName: company.name,
-  vatRegistrationNumber: company.taxNumber!, // e.g. 300000000000003
-  timestamp: invoice.issuedAt,
-  invoiceTotalWithVat: invoice.grandTotal,
-  vatAmount: invoice.taxTotal!,
-  invoiceType: ZatcaInvoiceType.standard, // or simplified (B2C)
-  buyerVatNumber: invoice.customerTaxNumber,
-);
+## 💡 Tips & Best Practices
 
-final qrBase64 = zatca.toQrBase64(); // pass to QR renderer
-```
+1. **Build `PdfConfig` once.** It caches the decoded font and logo; a fresh
+   instance per render re-reads the asset bundle every time.
+2. **Let the model do the math.** Leave `total` null and read `subtotal`,
+   `totalTax`, `total`, `paid` and `due` — pass `total` only to reproduce a
+   figure computed elsewhere.
+3. **Put the currency in the column header**, not in every cell. The itemized
+   templates already do this; keep it if you override `columns`.
+4. **Prefer `theme` over hard-coded colors** so a brand change is one line.
+5. **Test the long case.** A document that fits one page hides pagination bugs
+   in a custom template — render 100 rows in a test.
 
-Or build from a [SalesInvoice](lib/src/domain/entities/documents/sales_invoice.dart):
+## 🔧 Troubleshooting
 
-```dart
-final invoice = SalesInvoice(
-  // ... line items, totals, company with taxNumber ...
-  zatca: zatcaDataFromSalesInvoice(
-    invoice,
-    invoiceType: ZatcaInvoiceType.standard,
-  ),
-);
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Arabic prints as empty boxes | No TTF supplied; built-in fonts are Latin-only | Declare a font asset and set `fontPath` |
+| Latin words inside Arabic read backwards | The value was drawn as a single mixed-script string | Use `ui.bidiText` (or `ui.money` / `ui.pair`) instead of `ui.text` |
+| Digits or IDs read backwards | Same cause, in your own template | As above; `PdfUi.directionOf` shows what a value will be treated as |
+| `PdfTooBigPageException` | A block that never fits is retried on each page — usually a table nested in a column | Return the table as its own entry from `body` |
+| Numbers show as `3.00` where you wanted `3` | `format.number` always shows two decimals | Use `format.quantity` for counts |
+| A font asset silently does nothing | Path typo, swallowed by the fallback | Set `strictFonts: true` to get `PdfAssetException` |
 
-// PDF uses effectiveQrPayload = qrPayload ?? zatca.toQrBase64()
-```
+## 🗺️ Roadmap
 
-### PDF layout
+- [x] Themeable design system and paginating tables
+- [x] Mixed Arabic/Latin text handling
+- [ ] ZATCA Phase 1 / Phase 2 QR payloads
+- [ ] Thermal / ESC-POS output for 58 mm and 80 mm rolls
+- [ ] Statement-of-account and delivery-note templates
 
-When `SalesInvoice.zatca` is set, the template adds:
+## 📝 Changelog
 
-- Tax invoice type label (فاتورة ضريبية / مبسطة)
-- Seller VAT (+ buyer VAT for standard invoices)
-- ZATCA Phase 1 QR (scannable TLV, not a URL)
+See [CHANGELOG.md](CHANGELOG.md).
 
-### Phase 2 QR (tags 6–9)
+- **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
+- **v0.1.0** — Initial templates, models and PDF generation.
 
-After your Fatoora / CSID backend signs the XML UBL invoice, pass the cryptographic fields:
+## 🤝 Contributing
 
-| Tag | Field |
-|-----|--------|
-| 6 | Invoice hash (SHA-256 of signed XML, Base64) |
-| 7 | ECDSA signature (Base64) |
-| 8 | ECDSA public key (Base64) |
-| 9 | ZATCA cryptographic stamp (Base64) |
-
-```dart
-final zatca = ZatcaInvoiceData(
-  sellerName: company.name,
-  vatRegistrationNumber: company.taxNumber!,
-  timestamp: invoice.issuedAt,
-  invoiceTotalWithVat: invoice.grandTotal,
-  vatAmount: invoice.taxTotal!,
-  invoiceType: ZatcaInvoiceType.standard,
-  phase2: ZatcaPhase2Data(
-    invoiceHash: signingResult.invoiceHashBase64,
-    ecdsaSignature: signingResult.signatureBase64,
-    ecdsaPublicKey: signingResult.publicKeyBase64,
-    cryptographicStamp: signingResult.stampBase64,
-  ),
-);
-
-// Automatically uses encodePhase2 when phase2.isComplete
-final qrBase64 = zatca.toQrBase64();
-```
-
-Or attach Phase 2 when mapping from a sales invoice:
-
-```dart
-zatca: zatcaDataFromSalesInvoice(
-  invoice,
-  phase2: phase2FromBackend,
-),
-```
-
-> **XML UBL generation and CSID onboarding** are not part of this package — only TLV QR encoding and PDF layout. Use your ZATCA SDK for signing; pass the resulting Base64 strings here.
-
----
-
-## Save & share PDF
-
-```dart
-final bytes = await printer.previewBytes(
-  invoice,
-  template: const ModernArabicTemplate(),
-  fonts: appFonts,
-);
-
-await PrintDocuments.sharePdf(bytes, filename: 'INV-2026-0042.pdf');
-// or
-await PrintDocuments.previewPdf(bytes, name: 'Invoice');
-```
-
----
-
-## Paper sizes & formats
-
-| `PaperSize` | Typical use |
-|-------------|-------------|
-| `a4` | Standard invoices (default) |
-| `a5` | Compact invoices |
-| `letter` | US letter |
-| `roll80` | 80 mm thermal PDF / ESC/POS |
-| `roll58` | 58 mm thermal |
-
-```dart
-await printer.print(
-  invoice,
-  template: const ModernArabicTemplate(paperSize: PaperSize.roll80),
-  options: const PrintOptions(format: RenderFormat.escPos),
-);
-```
-
----
-
-## Printer connections
-
-```dart
-// PDF via system share sheet / print dialog (default)
-const PrintOptions(connection: PrinterConnection.system());
-
-// Network thermal (ESC/POS port 9100)
-const PrintOptions(
-  connection: PrinterConnection.network(host: '192.168.1.50'),
-  format: RenderFormat.escPos,
-);
-
-// Bluetooth thermal
-const PrintOptions(
-  connection: PrinterConnection.bluetooth(deviceId: 'AA:BB:CC:DD:EE:FF'),
-  format: RenderFormat.escPos,
-);
-```
-
-Configure a default connection on the service:
-
-```dart
-final printer = PrintService.create(
-  connection: const PrinterConnection.network(host: '192..168.1.50'),
-);
-```
-
----
-
-## Arabic & locales
-
-Pass fonts as described in [Fonts (required)](#fonts-required--you-provide-them). You can supply them via:
-
-- `TemplateContext.fonts`
-- `PrintService.create(fonts: …)`
-- the `fonts:` argument on `print` / `preview`
-
-Or build `PdfFontSet` directly from bytes (network, file picker, etc.):
-
-```dart
-final fonts = PdfFontSet(
-  arabicRegular: arabicBytes,
-  arabicBold: arabicBoldBytes,
-  latinRegular: latinBytes,
-  latinBold: latinBoldBytes,
-);
-```
-
-### Bilingual fields
-
-Use `*Ar` fields on entities for Arabic copy; the template picks the right string based on `TemplateContext.isRtl`:
-
-| Field | Example |
-|-------|---------|
-| `CompanyInfo.nameAr` | Company name |
-| `LineItem.descriptionAr` | Line description |
-| `notesAr` | Footer notes |
-| `customerNameAr` | Customer on invoices |
-
-### Dates & numbers
-
-- Dates respect `locale` (`ar` / `en`) after `DocumentDateFormatter.warmUp()`.
-- Amounts render as Western digits with currency suffix, e.g. `516.35 SAR`.
-
----
-
-## API overview
-
-| Type | Role |
-|------|------|
-| `PrintService` | Main entry: `print`, `preview`, `previewBytes`, `showPreview` |
-| `PrintOptions` | `previewOnly`, `format`, `paperSize`, `locale`, `layout`, `showLogo`, `showQr`, `showBarcode`, `connection` |
-| `TemplateContext` | Per-render locale, direction, theme, layout, labels, QR/barcode/logo toggles |
-| `PdfLayoutConfig` | PDF margins and compact typography |
-| `ContextualPrintTemplate` | Presets with `buildContext` (used by `PrintService`) |
-| `CompactEnglishTemplate` | LTR English compact preset |
-| `ModernArabicTemplate` | RTL Arabic default preset |
-| `TemplateEngine` | Low-level render to `PrintPayload` |
-| `PrintPayload` | Raw PDF or ESC/POS bytes |
-| `PrintResult<T>` | Success/failure with `PrintFailure` |
-| `PdfFontSet` / `PdfFontAssetPaths` | Required TTF bytes (`loadFromAssets` or constructor) |
-| `PdfPrintTheme` | PDF accent colors (`primaryHex`, optional `primaryLightHex`) |
-| `ZatcaInvoiceData` / `ZatcaQrEncoder` | Saudi Phase 1 & 2 TLV QR (Base64) |
-| `ZatcaPhase2Data` | Phase 2 cryptographic TLV fields |
-| `zatcaDataFromSalesInvoice` | Map [SalesInvoice] → ZATCA fields |
-| `PrintDocuments` | `sharePdf`, `previewPdf` helpers |
-| `DocumentDateFormatter` | Locale-safe date formatting |
-
-### Preview bytes without UI
-
-```dart
-final bytes = await printer.previewBytes(
-  invoice,
-  template: const ModernArabicTemplate(),
-);
-// Save or share bytes as application/pdf
-```
-
-### ESC/POS only
-
-```dart
-final payload = await printer.preview(
-  receipt,
-  template: const ModernArabicTemplate(),
-  options: const PrintOptions(format: RenderFormat.escPos),
-);
-```
-
----
-
-## Example app
-
-A full demo catalog lives in [`example/`](example/). Every **code block in this README** is implemented as a runnable recipe you can trigger from the app.
+Issues and pull requests are welcome at
+[the issue tracker](https://github.com/m7hamed-dev/save_points_pdf_templates/issues).
+Before opening a PR, run:
 
 ```bash
-cd example
-flutter pub get
-flutter run
+dart format . && flutter analyze --fatal-infos && flutter test
 ```
 
-| File | Role |
-|------|------|
-| [`example/lib/main.dart`](example/lib/main.dart) | App entry, catalog UI, README recipe runner |
-| [`example/lib/app_fonts.dart`](example/lib/app_fonts.dart) | Font loading (README [Fonts](#fonts-required--you-provide-them)) |
-| [`example/lib/readme_recipes.dart`](example/lib/readme_recipes.dart) | **All README snippets** — quick start, templates, ZATCA, share PDF, ESC/POS, printers |
-| [`example/lib/my_template.dart`](example/lib/my_template.dart) | Custom `MyTemplate` from [Custom templates](#custom-templates) |
-| [`example/lib/demo_data.dart`](example/lib/demo_data.dart) | Extra document catalog (invoices, vouchers, stock, labels) |
+## 📄 License
 
-In the app:
+MIT — see [LICENSE](LICENSE).
 
-- **README code examples** — one tile per README section (quick start, `PrintOptions`, ZATCA Phase 1/2, `previewBytes`, `sharePdf`, printer connections, etc.). Tap to run the same code as in the docs.
-- **Catalog tiles** — additional document previews with per-case `template` / `options` / `context`.
-- **Shortcut buttons** — Compact English sample and Modern Arabic green theme + layout overrides.
+<div align="center">
 
----
+Made with ❤️ for Flutter
 
-## Architecture
+⭐ Star this repo if it helped you
 
-```
-lib/
-├── domain/           # Entities: invoices, line items, money
-├── application/      # PrintService, PrintOptions
-├── templates/        # Template engine, PDF/ESC builders, presets
-├── infrastructure/   # Printer adapters (system, network, bluetooth)
-├── presentation/     # PrintPreview
-└── core/             # Failures, results, date formatting
-```
-
-Extend the package by adding document types in `domain`, new templates in `templates/presets`, or printer adapters in `infrastructure/printers/adapters`.
-
----
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| Arabic shows as boxes | Add Noto (or similar) TTFs to **your** app assets; pass `PdfFontSet` on every print |
-| `TemplateRenderFailure` (fonts required) | `await PdfFontSet.loadFromAssets(...)` then pass `fonts:` / `context.fonts` |
-| Unable to load font asset | Declare TTF paths in **your** `pubspec.yaml` `flutter.assets`, then full restart |
-| `LocaleDataException` | Call `DocumentDateFormatter.warmUp()` at startup |
-| Asset load error after `flutter clean` | Run `flutter pub get` in app **and** package; full restart (not hot reload) |
-| `Courier has no Unicode support` log | Harmless internal barcode font warning; suppressed in current template for QR/Code128 captions |
-
----
-
-## Dependencies
-
-Uses [`pdf`](https://pub.dev/packages/pdf), [`printing`](https://pub.dev/packages/printing), [`intl`](https://pub.dev/packages/intl), [`barcode`](https://pub.dev/packages/barcode), and [`esc_pos_utils_plus`](https://pub.dev/packages/esc_pos_utils_plus).
-
----
-
-## Printer integration
-
-See [docs/PRINTERS.md](docs/PRINTERS.md) for network thermal, Bluetooth, and PDF share workflows.
-
----
-
-## Contributing
-
-Issues and pull requests are welcome at [github.com/savepoints/save_points_pdf_templates](https://github.com/savepoints/save_points_pdf_templates).
-
-1. Fork the repo  
-2. Create a feature branch  
-3. Add tests in `test/`  
-4. Run `flutter test` and `dart analyze`  
-5. Open a PR  
-
----
-
-## License
-
-See [LICENSE](LICENSE) for details.
-# save_points_pdf_templates
-# save_points_pdf_templates
-# save_points_pdf_templates
+</div>
