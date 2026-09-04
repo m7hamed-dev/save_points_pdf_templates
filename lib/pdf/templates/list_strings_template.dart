@@ -48,7 +48,9 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
     titleEn: title.isNotEmpty ? title : data.displayTitle,
-    titleAr: arabicTitle(data.displayTitleAr),
+    // An explicit title is one string in an unknown language, so it
+    // stands alone rather than being captioned by the type's Arabic.
+    titleAr: title.isNotEmpty ? '' : arabicTitle(data.displayTitleAr),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,

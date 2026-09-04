@@ -68,52 +68,68 @@ class PdfTheme {
   const PdfTheme({
     this.accent = const PdfColor.fromInt(0xFF1F3A5F),
     this.onAccent = PdfColors.white,
-    this.text = const PdfColor.fromInt(0xFF1A1A1A),
+    this.text = const PdfColor.fromInt(0xFF111827),
     this.mutedText = const PdfColor.fromInt(0xFF6B7280),
-    this.border = const PdfColor.fromInt(0xFFDDE1E7),
-    this.surface = const PdfColor.fromInt(0xFFF7F8FA),
-    this.zebra = const PdfColor.fromInt(0xFFFAFBFC),
-    this.titleSize = 22.0,
-    this.headingSize = 13.0,
-    this.bodySize = 10.0,
-    this.captionSize = 8.5,
-    this.spacing = 8.0,
-    this.radius = 4.0,
-    this.borderWidth = 0.6,
-    this.labelTracking = 0.7,
-    this.titleTracking = 0.0,
-    this.headerStyle = PdfTableHeaderStyle.soft,
-    this.tableHeaderHeight = 26.0,
-    this.tableRowHeight = 22.0,
-    this.showZebraStripes = true,
-    this.margin = const PdfMargin.all(32.0),
+    this.border = const PdfColor.fromInt(0xFFE4E7EC),
+    this.surface = const PdfColor.fromInt(0xFFFAFAFB),
+    this.zebra = const PdfColor.fromInt(0xFFF7F8FA),
+    this.displaySize = 19.0,
+    this.titleSize = 26.0,
+    this.headingSize = 12.0,
+    this.bodySize = 9.5,
+    this.captionSize = 7.6,
+    this.spacing = 10.0,
+    this.radius = 2.0,
+    this.borderWidth = 0.5,
+    this.labelTracking = 0.9,
+    this.titleTracking = -0.7,
+    this.headerStyle = PdfTableHeaderStyle.underlined,
+    this.tableHeaderHeight = 24.0,
+    this.tableRowHeight = 26.0,
+    this.showZebraStripes = false,
+    this.showRowRules = true,
+    this.margin = const PdfMargin.all(40.0),
   });
 
-  /// Deep navy on white. The default, reads well in print and on screen.
+  /// Deep navy on white, set with room to breathe. The default.
+  ///
+  /// Colour is rationed on purpose — the accent appears on one keyline, the
+  /// column labels and the amount due, and nowhere else. What organises the
+  /// page is space and type size, not boxes.
   const PdfTheme.modern({PdfColor accent = const PdfColor.fromInt(0xFF1F3A5F)})
     : this(accent: accent);
 
-  /// Black and white with heavier rules — closest to a traditional invoice.
+  /// Black on white with a full grid and a filled table header — the
+  /// traditional invoice, for a reader who expects ruled paper.
   const PdfTheme.classic()
     : this(
         accent: PdfColors.black,
-        surface: const PdfColor.fromInt(0xFFEFEFEF),
-        zebra: const PdfColor.fromInt(0xFFF5F5F5),
-        border: const PdfColor.fromInt(0xFF999999),
-        borderWidth: 0.8,
+        surface: const PdfColor.fromInt(0xFFF2F2F2),
+        zebra: const PdfColor.fromInt(0xFFF7F7F7),
+        border: const PdfColor.fromInt(0xFF8A8A8A),
+        borderWidth: 0.7,
         radius: 0.0,
+        titleSize: 22.0,
+        titleTracking: 0.0,
+        tableRowHeight: 24.0,
+        spacing: 9.0,
+        margin: const PdfMargin.all(38.0),
         headerStyle: PdfTableHeaderStyle.filled,
       );
 
-  /// No fills, hairline rules only. Ideal for pre-printed stationery.
-  const PdfTheme.minimal({PdfColor accent = const PdfColor.fromInt(0xFF111111)})
+  /// Ink on paper and nothing else: no fills, no row rules, the widest
+  /// margins of the three. For pre-printed stationery and letterheads.
+  const PdfTheme.minimal({PdfColor accent = const PdfColor.fromInt(0xFF111827)})
     : this(
         accent: accent,
         surface: PdfColors.white,
         zebra: PdfColors.white,
-        border: const PdfColor.fromInt(0xFFCCCCCC),
+        border: const PdfColor.fromInt(0xFFD8DBE0),
         showZebraStripes: false,
+        showRowRules: false,
         radius: 0.0,
+        spacing: 10.0,
+        margin: const PdfMargin.all(42.0),
         headerStyle: PdfTableHeaderStyle.underlined,
       );
 
@@ -139,6 +155,11 @@ class PdfTheme {
   final PdfColor zebra;
 
   /// Type scale.
+  ///
+  /// The figure a reader looks for first — the amount due — is set at
+  /// [displaySize], between the title and a heading, so the total carries
+  /// weight without a filled bar behind it.
+  final double displaySize;
   final double titleSize;
   final double headingSize;
   final double bodySize;
@@ -184,6 +205,10 @@ class PdfTheme {
   final double tableRowHeight;
   final bool showZebraStripes;
 
+  /// Draws a hairline under every table row. Turn it off to separate rows by
+  /// their height alone, which needs [tableRowHeight] to be generous.
+  final bool showRowRules;
+
   /// Page margin applied by the generator.
   final PdfMargin margin;
 
@@ -195,6 +220,7 @@ class PdfTheme {
     PdfColor? border,
     PdfColor? surface,
     PdfColor? zebra,
+    double? displaySize,
     double? titleSize,
     double? headingSize,
     double? bodySize,
@@ -208,6 +234,7 @@ class PdfTheme {
     double? tableHeaderHeight,
     double? tableRowHeight,
     bool? showZebraStripes,
+    bool? showRowRules,
     PdfMargin? margin,
   }) {
     return PdfTheme(
@@ -218,6 +245,7 @@ class PdfTheme {
       border: border ?? this.border,
       surface: surface ?? this.surface,
       zebra: zebra ?? this.zebra,
+      displaySize: displaySize ?? this.displaySize,
       titleSize: titleSize ?? this.titleSize,
       headingSize: headingSize ?? this.headingSize,
       bodySize: bodySize ?? this.bodySize,
@@ -231,6 +259,7 @@ class PdfTheme {
       tableHeaderHeight: tableHeaderHeight ?? this.tableHeaderHeight,
       tableRowHeight: tableRowHeight ?? this.tableRowHeight,
       showZebraStripes: showZebraStripes ?? this.showZebraStripes,
+      showRowRules: showRowRules ?? this.showRowRules,
       margin: margin ?? this.margin,
     );
   }

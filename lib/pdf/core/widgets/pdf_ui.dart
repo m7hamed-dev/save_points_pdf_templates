@@ -186,18 +186,25 @@ class PdfUi {
     );
   }
 
-  /// The rule that closes the masthead: an accent bar with a hairline set
-  /// just below it, which reads as a deliberate device rather than a border.
-  pw.Widget keyline({double thickness = 1.8}) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        pw.Container(height: thickness, color: theme.accent),
-        pw.SizedBox(height: thickness),
-        pw.Container(height: theme.borderWidth, color: theme.accentMuted),
-      ],
-    );
-  }
+  /// The rule that closes the masthead: one accent line, nothing more.
+  ///
+  /// A single confident rule reads as a deliberate device; the stack of bars
+  /// it replaced read as a border someone forgot to remove.
+  pw.Widget keyline({double thickness = 0.9}) =>
+      pw.Container(height: thickness, color: theme.accent);
+
+  /// The one figure a reader looks for — the amount due. Set between a
+  /// heading and the title so it carries on its own, with no filled bar
+  /// behind it.
+  pw.Widget display(String value, {PdfColor? color, pw.TextAlign? align}) =>
+      text(
+        value,
+        size: theme.displaySize,
+        color: color ?? theme.text,
+        bold: true,
+        align: align,
+        letterSpacing: theme.titleTracking * 0.5,
+      );
 
   /// Text that mixes Arabic and Latin, laid out one script run at a time.
   ///
@@ -243,21 +250,35 @@ class PdfUi {
       alignment: _wrapAlignment(effectiveAlign),
       crossAxisAlignment: pw.WrapCrossAlignment.center,
       // Runs are trimmed, so the gap between them is reinstated here — the
-      // original spacing would otherwise end up outside the reversed run.
+      // original spacing would otherwise end up outside the run.
       spacing: (size ?? theme.bodySize) * 0.3,
       runSpacing: (size ?? theme.bodySize) * 0.25,
-      children: isRtl ? widgets.reversed.toList() : widgets,
+      // Logical order, never reversed: `Wrap` mirrors its own main axis on a
+      // right-to-left page, so reversing here as well would undo it and print
+      // the runs back to front — `حاسب محمول HP ProBook` with the Latin run
+      // on the right.
+      children: widgets,
     );
   }
 
+  /// Folds a *visual* text alignment into the *logical* one [pw.Wrap] wants.
+  ///
+  /// The renderer mirrors a wrap's main axis on a right-to-left page, so
+  /// `WrapAlignment.start` already means the right edge there. Passing a
+  /// right-aligned value straight through as `end` would push the content to
+  /// the far side of its box.
   pw.WrapAlignment _wrapAlignment(pw.TextAlign align) {
     switch (align) {
       case pw.TextAlign.center:
+      case pw.TextAlign.justify:
         return pw.WrapAlignment.center;
       case pw.TextAlign.right:
+        return isRtl ? pw.WrapAlignment.start : pw.WrapAlignment.end;
+      case pw.TextAlign.left:
+        return isRtl ? pw.WrapAlignment.end : pw.WrapAlignment.start;
       case pw.TextAlign.end:
         return pw.WrapAlignment.end;
-      default:
+      case pw.TextAlign.start:
         return pw.WrapAlignment.start;
     }
   }
@@ -331,6 +352,17 @@ class PdfUi {
   ///
   /// Use instead of `'$label $value'` whenever one part is Arabic and the
   /// other is Latin — a document number, a reference, a labelled figure.
+  ///
+  /// [first] is always the run read first, in either direction: the renderer
+  /// mirrors the layout on a right-to-left page, so passing the parts in
+  /// logical order is what puts the label on the right there. Reversing them
+  /// here as well would cancel that out and print `INV-2026-0042 رقم`.
+  ///
+  /// Built on a wrap rather than a row because a row lays its children out at
+  /// their natural width even when the box is narrower, with no clipping: a
+  /// long value beside an Arabic label — `السجل التجاري 1010101010` in a
+  /// masthead column — was drawn on top of the label instead of moving to the
+  /// next line.
   pw.Widget pair(
     String first,
     String second, {
@@ -340,16 +372,35 @@ class PdfUi {
     bool boldSecond = true,
     pw.MainAxisAlignment alignment = pw.MainAxisAlignment.start,
   }) {
-    final parts = [
-      text(first, size: size, color: color, bold: bold),
-      pw.SizedBox(width: theme.spacing * 0.4),
-      text(second, size: size, color: color, bold: boldSecond),
-    ];
-    return pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      mainAxisAlignment: alignment,
-      children: isRtl ? parts.reversed.toList() : parts,
+    return pw.Wrap(
+      alignment: _pairAlignment(alignment),
+      crossAxisAlignment: pw.WrapCrossAlignment.center,
+      spacing: theme.spacing * 0.4,
+      runSpacing: theme.spacing * 0.15,
+      children: [
+        text(first, size: size, color: color, bold: bold),
+        text(second, size: size, color: color, bold: boldSecond),
+      ],
     );
+  }
+
+  /// A wrap's alignment is logical — it mirrors its own main axis — so the
+  /// row alignment a caller asks for maps across directly.
+  pw.WrapAlignment _pairAlignment(pw.MainAxisAlignment alignment) {
+    switch (alignment) {
+      case pw.MainAxisAlignment.end:
+        return pw.WrapAlignment.end;
+      case pw.MainAxisAlignment.center:
+        return pw.WrapAlignment.center;
+      case pw.MainAxisAlignment.spaceBetween:
+        return pw.WrapAlignment.spaceBetween;
+      case pw.MainAxisAlignment.spaceAround:
+        return pw.WrapAlignment.spaceAround;
+      case pw.MainAxisAlignment.spaceEvenly:
+        return pw.WrapAlignment.spaceEvenly;
+      case pw.MainAxisAlignment.start:
+        return pw.WrapAlignment.start;
+    }
   }
 
   // ── Spacing & rules ─────────────────────────────────────────────────────

@@ -68,7 +68,7 @@ Or add it by hand:
 
 ```yaml
 dependencies:
-  save_points_pdf_templates: ^0.2.1
+  save_points_pdf_templates: ^0.3.0
 ```
 
 > [!IMPORTANT]
@@ -227,29 +227,38 @@ final config = PdfConfig(
 Every color, type size and spacing value lives on `PdfTheme`.
 
 ```dart
-const PdfTheme.modern();     // navy accent, soft table header — the default
-const PdfTheme.classic();    // black rules, filled header, square corners
-const PdfTheme.minimal();    // hairlines only, no fills, underlined header
+const PdfTheme.modern();     // wide margins, one accent keyline — the default
+const PdfTheme.classic();    // full grid, filled header, square corners
+const PdfTheme.minimal();    // no fills, no row rules, the widest margins
 const PdfTheme.modern(accent: PdfColor.fromInt(0xFF00695C));
 ```
+
+The three are three documents, not three palettes. `modern` rations colour to
+one keyline, the column labels and the amount due, and lets space do the
+organising. `classic` rules everything, for a reader who expects ruled paper.
+`minimal` is ink on paper: nothing between the rows but their own height.
 
 The table header follows `headerStyle`:
 
 | `PdfTableHeaderStyle` | Look |
 |---|---|
-| `soft` | Pale accent wash, accent labels over a firm accent rule (default) |
+| `underlined` | No fill; the header sits on an accent rule (default) |
+| `soft` | Pale accent wash under accent labels |
 | `filled` | Solid accent bar with reversed text |
-| `underlined` | No fill; the header sits on a rule |
+
+Type sizes carry the hierarchy, so the amount due needs no box behind it:
+`titleSize` for the document type, `displaySize` for the total, then
+`headingSize` / `bodySize` / `captionSize`.
 
 Tweak a preset instead of writing one from scratch:
 
 ```dart
 final theme = const PdfTheme.modern().copyWith(
   accent: PdfColors.teal700,
-  showZebraStripes: false,
+  showRowRules: false,                // separate rows by height alone
   headerStyle: PdfTableHeaderStyle.filled,
   labelTracking: 1.0,                 // tracking on small caps labels
-  margin: const PdfMargin.all(24),
+  margin: const PdfMargin.all(48),
 );
 ```
 
@@ -377,6 +386,7 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 | `PdfTooBigPageException` | A block that never fits is retried on each page — usually a table nested in a column | Return the table as its own entry from `body` |
 | Numbers show as `3.00` where you wanted `3` | `format.number` always shows two decimals | Use `format.quantity` for counts |
 | Arabic letters look detached | Letter spacing applied to a connected script | Use `ui.microLabel` / `ui.text`, which drop tracking on RTL text |
+| An Arabic word loses its last letter — `التجاري` prints as `التجار` | The TTF has no isolated Arabic presentation forms (`U+FEF1`, `U+FEAD`…). A letter that ends a word after a non-connecting one — `ر`, `ا`, `د`, `و`, `ز` — needs the isolated form; without it the renderer substitutes a glyph whose advance is wrong and the letter collapses onto its neighbour | Use a build of the family that ships the full Arabic Presentation Forms-B range. Not every subset does, and two files of the same typeface can differ |
 | A font asset silently does nothing | Path typo, swallowed by the fallback | Set `strictFonts: true` to get `PdfAssetException` |
 
 ## 🗺️ Roadmap
@@ -391,6 +401,7 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+- **v0.3.0** — Templates redesigned around type and space; Arabic/RTL layout was mirrored twice and is now correct; font-capability and document-naming fixes.
 - **v0.2.1** — Design pass: tracked labels, softer table header, filled totals gutter, Arabic letter-spacing fix.
 - **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
 - **v0.1.0** — Initial templates, models and PDF generation.

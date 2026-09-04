@@ -10,7 +10,7 @@ import 'package:save_points_pdf_templates/pdf/templates/base_template.dart';
 ///
 /// ```dart
 /// await PdfDocuments.share(template: invoiceTemplate, fileName: 'INV-42');
-/// await PdfDocuments.print(template: invoiceTemplate);
+/// await PdfDocuments.printDocument(template: invoiceTemplate);
 /// final bytes = await PdfDocuments.bytes(template: invoiceTemplate);
 /// ```
 class PdfDocuments {
@@ -30,7 +30,7 @@ class PdfDocuments {
     final data = await bytes(template: template);
     return Printing.sharePdf(
       bytes: data,
-      filename: _withExtension(fileName ?? template.title),
+      filename: _withExtension(fileName ?? template.documentName),
       subject: subject,
       emails: emails,
     );
@@ -45,7 +45,7 @@ class PdfDocuments {
     final data = await bytes(template: template);
     return Printing.layoutPdf(
       onLayout: (_) => data,
-      name: jobName ?? _withExtension(template.title),
+      name: jobName ?? _withExtension(template.documentName),
       format: format ?? template.pageFormat,
     );
   }

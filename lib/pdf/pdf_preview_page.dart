@@ -29,7 +29,7 @@ class PdfPreviewPage<T> extends StatelessWidget {
 
   final BaseTemplate<T> template;
 
-  /// Defaults to the template title.
+  /// Defaults to the template's [BaseTemplate.documentName].
   final String? appBarTitle;
 
   final List<Widget>? actions;
@@ -44,7 +44,7 @@ class PdfPreviewPage<T> extends StatelessWidget {
   final double maxPageWidth;
 
   String get _fileName {
-    final name = fileName ?? template.title;
+    final name = (fileName ?? template.documentName).trim();
     if (name.isEmpty) return 'document.pdf';
     return name.endsWith('.pdf') ? name : '$name.pdf';
   }
@@ -53,7 +53,7 @@ class PdfPreviewPage<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle ?? template.title),
+        title: Text(appBarTitle ?? template.documentName),
         actions: actions,
       ),
       body: PdfPreview(

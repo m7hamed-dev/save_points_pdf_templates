@@ -1,3 +1,96 @@
+## 0.3.0
+
+Every Arabic document the package produced was laid out back to front, and the
+design has been rebuilt around type and space instead of boxes and rules.
+
+### Changed
+
+- **Redesigned every template.** The type scale carries the hierarchy — a
+  larger, tighter document title, a new `displaySize` for the amount due, and
+  more contrast down to the caption. Rules and fills gave way to whitespace:
+  wider margins, taller rows, no zebra striping, no hairline between every
+  summary line, and one accent keyline where there were three stacked bars.
+- **The amount due is no longer a filled bar.** It sits at display size in the
+  accent colour over a keyline, on invoices and on vouchers alike. A solid slab
+  reads as a screen component, not as the figure a reader's eye should land on.
+- **The three presets are three documents, not three palettes.** `modern`
+  rations colour and lets space organise the page; `classic` rules everything,
+  for a reader who expects ruled paper; `minimal` is ink on paper, with nothing
+  between rows but their own height.
+- Party details, the meta block and notes lost their boxes: a tracked label
+  over its content, with the name or the value carrying the weight.
+- `PdfTheme()` defaults moved with the design — `headerStyle` is now
+  `underlined`, `showZebraStripes` is `false`, and the sizes, spacing and
+  margins changed. A theme built with `copyWith` keeps whatever it set.
+- The masthead leads with the label in the document's own language. An Arabic
+  invoice whose largest type was `Sales Invoice` read as an English document
+  that happened to be mirrored.
+- `PdfBaseInvoiceModel.displayTitleAr` is empty when `title` is set. A custom
+  title is one string in a language the model does not know, so it replaces the
+  bilingual pair rather than being captioned by the type's Arabic.
+- `PdfFormatters` falls back to English formatting when the font cannot draw
+  Arabic, so `longDate` stops returning a month name that prints as blank
+  boxes. Layout direction is unaffected.
+
+### Added
+
+- `PdfTheme.displaySize` and `PdfTheme.showRowRules`.
+- `PdfColumnSpec.intrinsic`, which sizes a column to its content instead of a
+  flex share.
+- `PdfUi.display`, the type style behind the amount due.
+- `BaseTemplate.documentName`.
+
+### Fixed
+
+- **Mixed Arabic and Latin text was printed back to front in Arabic
+  documents.** The renderer already mirrors a `Row` and a `Wrap` on a
+  right-to-left page; `PdfUi.bidiText` and `PdfUi.pair` reversed their children
+  on top of that, which cancelled it out. `حاسب محمول HP ProBook` came out with
+  the Latin run leading, and every document number printed as
+  `INV-2026-0042 رقم`.
+- `PdfUi.bidiText` folds a visual text alignment into the logical one a wrap
+  expects, instead of pushing right-aligned content to the far side of its box.
+- The item table emphasized the wrong column in Arabic. The bold column was
+  anchored to the last visual cell, and mirroring moves the line amount to the
+  head of the row — so the row number was set in bold and the amount was not.
+- `PdfUi.pair` no longer draws outside its box. A row lays its children out at
+  their natural width whatever the space, with no clipping, so a long value
+  beside a long label overran the column it was in.
+- Arabic column labels are no longer broken mid-word. A flex share tuned for
+  `Unit` is too narrow for `الوحدة`, which is one unbreakable word.
+- **A ready-made `font` stopped `PdfConfig.init` from loading anything else.**
+  The logo, the bold face, the fallback fonts and the locale data were all
+  skipped, and `strictFonts` never fired — the documented
+  `font: await PdfGoogleFonts.cairoRegular()` path silently lost its logo and
+  its Arabic dates.
+- `PdfConfig.invalidate` restores fonts and logo bytes passed to the
+  constructor instead of clearing them. Nothing records where they came from,
+  so dropping them left the config permanently without a font.
+- Two documents rendered at once no longer make `PdfConfig` load its assets
+  twice and stack duplicate fallback fonts.
+- **`PdfConfig.canRenderArabic` asks the font what it contains** rather than
+  assuming any custom TTF can set Arabic. A Latin-only face such as Inter is a
+  custom font too, and treating it as Arabic-capable printed a row of blank
+  boxes under the title of every English document.
+- `BaseTemplate.tr` falls back to English when the font cannot draw Arabic, the
+  same guard `PdfUi.bilingual` already applied.
+- **Documents had no name.** `BaseTemplate.title` is an optional override for
+  the printed heading and is empty on almost every document, so the PDF's
+  `/Title` was blank, the preview page's app bar was blank, and every shared
+  file was called `document.pdf`. `documentName` falls back to the model's
+  label and number.
+- A long document type no longer pushes the issuer block out of the masthead.
+
+### Notes
+
+- The layout is now covered by tests that read the drawn output — glyph
+  positions in the page's content stream — rather than the widget tree, since
+  the tree is identical in both directions and it is the renderer that decides
+  what ends up on the right.
+- A font without the isolated Arabic presentation forms drops a word-final
+  letter after `ر`, `ا`, `د`, `و` or `ز`. That is a property of the font file,
+  not of the package; see Troubleshooting in the README.
+
 ## 0.2.1
 
 ### Changed

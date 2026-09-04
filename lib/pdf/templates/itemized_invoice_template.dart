@@ -59,12 +59,19 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// Columns of the item table. Override to add or drop a column.
   List<PdfColumnSpec> get columns => [
     PdfColumnSpec(tr('Description', 'البيان'), flex: 3.6),
-    PdfColumnSpec(tr('Qty', 'الكمية'), flex: 0.9, align: PdfCellAlign.center),
+    // Sized to their content: these two carry short values under a label that
+    // is one unbreakable word in Arabic, and a flex share narrow enough for
+    // `Qty` splits `الكمية` down the middle.
+    PdfColumnSpec(
+      tr('Qty', 'الكمية'),
+      align: PdfCellAlign.center,
+      intrinsic: true,
+    ),
     if (hasUnits)
       PdfColumnSpec(
         tr('Unit', 'الوحدة'),
-        flex: 0.7,
         align: PdfCellAlign.center,
+        intrinsic: true,
       ),
     PdfColumnSpec(
       moneyHeader('Unit Price', 'سعر الوحدة'),
@@ -148,7 +155,9 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
     titleEn: title.isNotEmpty ? title : data.type.english,
-    titleAr: arabicTitle(data.type.arabic),
+    // An explicit title is one string in an unknown language, so it
+    // stands alone rather than being captioned by the type's Arabic.
+    titleAr: title.isNotEmpty ? '' : arabicTitle(data.type.arabic),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,
@@ -165,14 +174,14 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
     ui.gap(1.5),
     // Its own block so a long document breaks across pages inside the table.
     buildItemsTable(),
-    ui.gap(1.5),
+    ui.gap(1.4),
     buildTotals(),
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
       sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
     ],
     if (showSignatures) ...[
-      ui.gap(2),
+      ui.gap(1.5),
       sections.signatures(
         signatureLabels ??
             [tr('Issued by', 'المحرر'), tr('Received by', 'المستلم')],

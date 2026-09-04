@@ -10,6 +10,7 @@ class PdfColumnSpec {
     this.flex = 1,
     this.align = PdfCellAlign.start,
     this.fixedWidth,
+    this.intrinsic = false,
   });
 
   /// Header text.
@@ -23,6 +24,15 @@ class PdfColumnSpec {
 
   /// Absolute width in points. Use for narrow columns such as `#` or `Qty`.
   final double? fixedWidth;
+
+  /// Sizes the column to its widest cell instead of taking a [flex] share of
+  /// the row.
+  ///
+  /// Use it wherever the label cannot be broken. A flex tuned for `Unit` is
+  /// too narrow for `الوحدة`, which is one unbreakable word: the renderer
+  /// splits it across two lines as `لوحدة` / `ا` and reorders the halves.
+  /// Ignored when [fixedWidth] is set.
+  final bool intrinsic;
 }
 
 /// The document table.
@@ -117,14 +127,18 @@ class PdfDataTable {
 
   pw.Table _table(List<PdfColumnSpec> cols, List<List<String>> data) {
     final order = ui.isRtl ? cols.reversed.toList() : cols;
+    // The emphasized column is the last one in *logical* order — the line
+    // amount. Mirroring moves it to the head of the row, so the index has to
+    // travel with it; leaving it at `length - 1` bolds whatever ended up last
+    // after the flip, which on an Arabic invoice is the row-number column.
+    final emphasized =
+        !emphasizeLastColumn || cols.isEmpty
+            ? -1
+            : (ui.isRtl ? 0 : cols.length - 1);
 
     return pw.Table(
       columnWidths: {
-        for (var i = 0; i < order.length; i++)
-          i:
-              order[i].fixedWidth != null
-                  ? pw.FixedColumnWidth(order[i].fixedWidth!)
-                  : pw.FlexColumnWidth(order[i].flex),
+        for (var i = 0; i < order.length; i++) i: _widthOf(order[i]),
       },
       children: [
         _headerRow(order),
@@ -134,9 +148,19 @@ class PdfDataTable {
             ui.isRtl ? data[r].reversed.toList() : data[r],
             r,
             isLast: r == data.length - 1,
+            emphasized: emphasized,
           ),
       ],
     );
+  }
+
+  pw.TableColumnWidth _widthOf(PdfColumnSpec column) {
+    if (column.fixedWidth != null) {
+      return pw.FixedColumnWidth(column.fixedWidth!);
+    }
+    return column.intrinsic
+        ? const pw.IntrinsicColumnWidth()
+        : pw.FlexColumnWidth(column.flex);
   }
 
   pw.TableRow _headerRow(List<PdfColumnSpec> cols) {
@@ -153,7 +177,7 @@ class PdfDataTable {
       decoration: pw.BoxDecoration(
         color: background,
         border: pw.Border(
-          bottom: pw.BorderSide(color: theme.accent, width: 1.2),
+          bottom: pw.BorderSide(color: theme.accent, width: 0.9),
         ),
       ),
       children: [
@@ -162,8 +186,8 @@ class PdfDataTable {
             constraints: pw.BoxConstraints(minHeight: theme.tableHeaderHeight),
             alignment: _alignment(column.align),
             padding: pw.EdgeInsets.symmetric(
-              horizontal: theme.spacing * 0.6,
-              vertical: theme.spacing * 0.45,
+              horizontal: theme.spacing * 0.55,
+              vertical: theme.spacing * 0.5,
             ),
             child: ui.microLabel(
               column.label,
@@ -179,19 +203,27 @@ class PdfDataTable {
     List<PdfColumnSpec> cols,
     List<String> cells,
     int index, {
+    required int emphasized,
     bool isLast = false,
   }) {
     final theme = ui.theme;
     final striped = theme.showZebraStripes && index.isOdd;
+    // The closing rule is always drawn: it is what ends the table. The rules
+    // between rows are optional, because rows set on a generous height
+    // separate themselves without them.
+    final ruled = theme.showRowRules || isLast;
     return pw.TableRow(
       decoration: pw.BoxDecoration(
         color: striped ? theme.zebra : PdfColors.white,
-        border: pw.Border(
-          bottom: pw.BorderSide(
-            color: isLast ? theme.accentMuted : theme.border,
-            width: isLast ? theme.borderWidth * 1.6 : theme.borderWidth,
-          ),
-        ),
+        border:
+            ruled
+                ? pw.Border(
+                  bottom: pw.BorderSide(
+                    color: isLast ? theme.accent : theme.border,
+                    width: isLast ? 0.9 : theme.borderWidth,
+                  ),
+                )
+                : null,
       ),
       children: [
         for (var i = 0; i < cols.length; i++)
@@ -199,13 +231,13 @@ class PdfDataTable {
             constraints: pw.BoxConstraints(minHeight: theme.tableRowHeight),
             alignment: _alignment(cols[i].align),
             padding: pw.EdgeInsets.symmetric(
-              horizontal: theme.spacing * 0.6,
-              vertical: theme.spacing * 0.4,
+              horizontal: theme.spacing * 0.55,
+              vertical: theme.spacing * 0.55,
             ),
             child: ui.bidiText(
               i < cells.length ? cells[i] : '',
               align: _textAlign(cols[i].align),
-              bold: emphasizeLastColumn && i == cols.length - 1,
+              bold: i == emphasized,
             ),
           ),
       ],

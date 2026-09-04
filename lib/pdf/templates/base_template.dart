@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/core/formatters/pdf_formatters.dart';
 import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_sections.dart';
 import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_ui.dart';
+import 'package:save_points_pdf_templates/pdf/models/base/pdf_base_invoice_model.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_config.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_theme.dart';
@@ -50,7 +51,8 @@ abstract class BaseTemplate<T> {
   /// Fonts, logo, issuer, locale, currency and theme.
   final PdfConfig pdfConfig;
 
-  /// Overrides the document title derived from the model.
+  /// Overrides the document title derived from the model. Empty by default —
+  /// read [documentName] rather than this field for the document's own name.
   final String title;
 
   /// Column headers for table-driven templates.
@@ -93,7 +95,33 @@ abstract class BaseTemplate<T> {
   /// Picks the label matching the document direction. Templates use it for
   /// their own chrome — `tr('Subtotal', 'الإجمالي الفرعي')` — so one template
   /// serves both languages instead of shipping two.
-  String tr(String english, String arabic) => isRtl ? arabic : english;
+  ///
+  /// Falls back to [english] when the configured font cannot draw Arabic, the
+  /// same guard [PdfUi.bilingual] applies: an Arabic label the font has no
+  /// glyphs for is a row of blank boxes, and a readable English document beats
+  /// an unreadable Arabic one.
+  String tr(String english, String arabic) =>
+      isRtl && pdfConfig.canRenderArabic ? arabic : english;
+
+  /// What this document is called outside the page: the PDF's `/Title`
+  /// metadata, the name the share sheet suggests and the preview page's app
+  /// bar all come from here.
+  ///
+  /// [title] is an optional override for the printed heading, so it is empty
+  /// on almost every document; reading it directly named every file
+  /// `document.pdf` and left the preview app bar blank. This falls back to the
+  /// model's own label and number instead.
+  ///
+  /// Override it for a model that is not a [PdfBaseInvoiceModel], or to name
+  /// documents some other way.
+  String get documentName {
+    if (title.isNotEmpty) return title;
+    final model = data;
+    if (model is! PdfBaseInvoiceModel) return 'Document';
+    return model.id.isEmpty
+        ? model.displayTitle
+        : '${model.displayTitle} ${model.id}';
+  }
 
   /// The issuer, from the config.
   PdfPartyModel? get company => pdfConfig.company;

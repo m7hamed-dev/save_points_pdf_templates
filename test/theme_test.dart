@@ -24,12 +24,50 @@ void main() {
     });
 
     test('presets pick different table header treatments', () {
-      expect(const PdfTheme().headerStyle, PdfTableHeaderStyle.soft);
+      // The default header sits on a rule with no fill behind it; `soft` and
+      // `filled` stay available for a theme that wants a band.
+      expect(const PdfTheme().headerStyle, PdfTableHeaderStyle.underlined);
       expect(const PdfTheme.classic().headerStyle, PdfTableHeaderStyle.filled);
       expect(
         const PdfTheme.minimal().headerStyle,
         PdfTableHeaderStyle.underlined,
       );
+    });
+
+    test('the presets are three distinct documents, not three palettes', () {
+      const modern = PdfTheme.modern();
+      const classic = PdfTheme.classic();
+      const minimal = PdfTheme.minimal();
+
+      // Rules: classic draws a full grid, minimal draws none between rows.
+      expect(modern.showRowRules, isTrue);
+      expect(classic.showRowRules, isTrue);
+      expect(minimal.showRowRules, isFalse);
+
+      // Air: minimal has the widest margins, classic the tightest.
+      expect(minimal.margin.left, greaterThan(modern.margin.left));
+      expect(classic.margin.left, lessThan(modern.margin.left));
+
+      // None of them stripes rows any more.
+      for (final theme in [modern, classic, minimal]) {
+        expect(theme.showZebraStripes, isFalse);
+      }
+    });
+
+    test('the type scale has real contrast', () {
+      const theme = PdfTheme();
+      // A flat scale is what made the old documents read as a form. The
+      // amount due sits between a heading and the title.
+      expect(theme.titleSize, greaterThan(theme.displaySize));
+      expect(theme.displaySize, greaterThan(theme.headingSize));
+      expect(theme.headingSize, greaterThan(theme.bodySize));
+      expect(theme.bodySize, greaterThan(theme.captionSize));
+      expect(theme.titleSize / theme.bodySize, greaterThan(2.4));
+    });
+
+    test('display type is tracked tighter than body type', () {
+      expect(const PdfTheme().titleTracking, lessThan(0));
+      expect(const PdfTheme().labelTracking, greaterThan(0));
     });
 
     test('copyWith carries the new tokens', () {

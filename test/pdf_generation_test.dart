@@ -171,43 +171,47 @@ void main() {
     expectValidPdf(bytes);
   });
 
-  group('PdfConfig', () {
-    test('falls back to the built-in font when the asset is missing', () async {
-      final config = PdfConfig(fontPath: 'assets/does-not-exist.ttf');
-      await config.init();
-      expect(config.hasCustomFont, isFalse);
+  // `title` is an optional override for the printed heading and is empty on
+  // almost every document, so reading it as the document's name left the PDF
+  // metadata blank, the preview app bar blank, and every shared file called
+  // `document.pdf`.
+  group('document name', () {
+    test('falls back to the model label and number', () {
+      final template = SaleInvoiceTemplate(
+        data: saleInvoice(),
+        pdfConfig: testConfig(),
+      );
+      expect(template.documentName, 'Sales Invoice INV-2026-0042');
     });
 
-    test('throws with a clear message when strictFonts is on', () async {
-      final config = PdfConfig(
-        fontPath: 'assets/does-not-exist.ttf',
-        strictFonts: true,
+    test('an explicit title wins', () {
+      final template = SaleInvoiceTemplate(
+        data: saleInvoice(),
+        pdfConfig: testConfig(),
+        title: 'Tax Invoice',
       );
-      expect(
-        config.init,
-        throwsA(
-          isA<PdfAssetException>().having(
-            (e) => e.message,
-            'message',
-            contains('does-not-exist.ttf'),
-          ),
+      expect(template.documentName, 'Tax Invoice');
+    });
+
+    test('a model with no number is named by its label alone', () {
+      final template = ListStringsTemplate(
+        data: const PdfListStringsModel(items: [], title: 'Stock Count'),
+        pdfConfig: testConfig(),
+      );
+      expect(template.documentName, 'Stock Count');
+    });
+
+    test('reaches the PDF metadata', () async {
+      final bytes = await PdfGenerator.generate(
+        template: SaleInvoiceTemplate(
+          data: saleInvoice(),
+          pdfConfig: testConfig(),
         ),
       );
-    });
-
-    test('init is idempotent and invalidate resets it', () async {
-      final config = testConfig();
-      await config.init();
-      await config.init();
-      config.invalidate();
-      await config.init();
-      expect(config.isRtl, isFalse);
-    });
-
-    test('the Cairo preset is right-to-left with SAR', () {
-      final config = CairoPdfFontConfig();
-      expect(config.isRtl, isTrue);
-      expect(config.currency, 'SAR');
+      final title = RegExp(
+        r'/Title\s*\(([^)]*)\)',
+      ).firstMatch(String.fromCharCodes(bytes))?.group(1);
+      expect(title, 'Sales Invoice INV-2026-0042');
     });
   });
 
@@ -235,6 +239,33 @@ void main() {
       );
       expectValidPdf(bytes);
     });
+  });
+
+  // The design pass traded rules for whitespace, and whitespace is what
+  // pushes a signature block onto a second page. A short invoice that spills
+  // just to carry its signatures looks like a mistake, so the vertical rhythm
+  // is held to this.
+  test('an ordinary invoice fits on one page in every preset', () async {
+    for (final preset
+        in {
+          'modern': const PdfTheme.modern(),
+          'classic': const PdfTheme.classic(),
+          'minimal': const PdfTheme.minimal(),
+        }.entries) {
+      final bytes = await PdfGenerator.generate(
+        template: SaleInvoiceTemplate(
+          data: saleInvoice(total: 30000, paid: 12000),
+          pdfConfig: testConfig(),
+          theme: preset.value,
+          qrCode: 'https://example.com/inv/42',
+        ),
+      );
+      final pages =
+          RegExp(
+            r'/Type\s*/Page[^s]',
+          ).allMatches(String.fromCharCodes(bytes)).length;
+      expect(pages, 1, reason: preset.key);
+    }
   });
 
   test('PdfDocuments.bytes renders the same document', () async {

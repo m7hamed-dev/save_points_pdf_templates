@@ -42,19 +42,24 @@ class PdfSections {
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Expanded(child: _issuerBlock(company, logo, logoSize)),
+            pw.Expanded(flex: 5, child: _issuerBlock(company, logo, logoSize)),
             ui.gapX(2),
-            _documentIdentityBlock(
-              titleEn: titleEn,
-              titleAr: titleAr,
-              documentNumber: documentNumber,
-              documentNumberLabel: documentNumberLabel,
-              statusLabel: statusLabel,
-              statusColor: statusColor,
+            // Bounded rather than free: a long type name — `Inventory Count
+            // Sheet` — used to push the issuer block off its own half.
+            pw.Expanded(
+              flex: 4,
+              child: _documentIdentityBlock(
+                titleEn: titleEn,
+                titleAr: titleAr,
+                documentNumber: documentNumber,
+                documentNumberLabel: documentNumberLabel,
+                statusLabel: statusLabel,
+                statusColor: statusColor,
+              ),
             ),
           ],
         ),
-        pw.SizedBox(height: theme.spacing),
+        pw.SizedBox(height: theme.spacing * 1.6),
         ui.keyline(),
       ],
     );
@@ -84,7 +89,7 @@ class PdfSections {
               if (company != null && company.name.isNotEmpty)
                 ui.heading(company.name),
               if (details.isNotEmpty) ...[
-                pw.SizedBox(height: ui.theme.spacing * 0.3),
+                pw.SizedBox(height: ui.theme.spacing * 0.45),
                 // One line per detail: joining an Arabic address to a Latin
                 // phone number would make a single mixed-script run.
                 for (final detail in details)
@@ -117,23 +122,30 @@ class PdfSections {
     String? statusLabel,
     PdfColor? statusColor,
   }) {
+    // Lead with the label in the document's own language. An Arabic invoice
+    // whose largest type is `Sales Invoice` reads as an English document that
+    // happens to be mirrored. [titleAr] is already empty when the font cannot
+    // draw Arabic, which falls the lead back to English on its own.
+    final lead = ui.isRtl && titleAr.isNotEmpty ? titleAr : titleEn;
+    final secondary = ui.isRtl && titleAr.isNotEmpty ? titleEn : titleAr;
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
         ui.text(
-          titleEn,
+          lead,
           size: ui.theme.titleSize,
           color: ui.theme.accent,
           bold: true,
-          align: pw.TextAlign.right,
+          align: ui.alignEnd,
           letterSpacing: ui.theme.titleTracking,
         ),
-        if (titleAr.isNotEmpty && titleAr != titleEn)
+        if (secondary.isNotEmpty && secondary != lead)
           ui.text(
-            titleAr,
+            secondary,
             size: ui.theme.headingSize,
             color: ui.theme.mutedText,
-            align: pw.TextAlign.right,
+            align: ui.alignEnd,
           ),
         if (documentNumber != null && documentNumber.isNotEmpty) ...[
           pw.SizedBox(height: ui.theme.spacing * 0.5),
@@ -164,12 +176,7 @@ class PdfSections {
       if (party != null && party.isNotEmpty)
         pw.Expanded(flex: 5, child: partyCard(party, partyLabel)),
       if (meta.isNotEmpty) pw.Expanded(flex: 4, child: metaCard(meta)),
-      if (qrData != null && qrData.isNotEmpty)
-        ui.card(
-          padding: ui.theme.spacing * 0.6,
-          background: PdfColors.white,
-          child: ui.qr(qrData, size: qrSize),
-        ),
+      if (qrData != null && qrData.isNotEmpty) ui.qr(qrData, size: qrSize),
     ];
 
     if (cards.isEmpty) return pw.SizedBox();
@@ -195,24 +202,24 @@ class PdfSections {
       if (party.email.isNotEmpty) party.email,
     ];
 
-    final content = pw.Column(
+    return pw.Column(
       crossAxisAlignment: ui.crossStart,
       children: [
-        ui.microLabel(label, color: theme.accent),
-        pw.SizedBox(height: theme.spacing * 0.45),
+        ui.microLabel(label, color: theme.mutedText),
+        pw.SizedBox(height: theme.spacing * 0.55),
+        // The name is the anchor of the block, so it carries the weight
+        // instead of a coloured bar drawn beside it.
         ui.bidiText(party.name, bold: true, size: theme.headingSize),
         for (final line in lines) ...[
-          pw.SizedBox(height: theme.spacing * 0.22),
-          ui.caption(line, color: theme.text),
+          pw.SizedBox(height: theme.spacing * 0.3),
+          ui.caption(line, color: theme.mutedText),
         ],
         if (party.taxNumber?.isNotEmpty ?? false) ...[
-          pw.SizedBox(height: theme.spacing * 0.22),
+          pw.SizedBox(height: theme.spacing * 0.3),
           _registration(ui.bilingual('VAT', 'الرقم الضريبي'), party.taxNumber!),
         ],
       ],
     );
-
-    return ui.accentBar(child: content);
   }
 
   /// `VAT  300000000000003` — a tracked label with the number beside it.
@@ -229,32 +236,22 @@ class PdfSections {
   /// party block beside it.
   pw.Widget metaCard(Map<String, String> meta) {
     final theme = ui.theme;
-    final entries = meta.entries.toList();
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    // Each fact is a small label over its value, and the facts sit beside one
+    // another. Ruled label/value rows made three dates look like a form to
+    // fill in; stacked fields read as a masthead.
+    return pw.Wrap(
+      spacing: theme.spacing * 2.4,
+      runSpacing: theme.spacing,
       children: [
-        for (var i = 0; i < entries.length; i++) ...[
-          if (i > 0) ui.rule(),
-          pw.Padding(
-            padding: pw.EdgeInsets.symmetric(vertical: theme.spacing * 0.35),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Expanded(flex: 4, child: ui.microLabel(entries[i].key)),
-                ui.gapX(0.5),
-                pw.Expanded(
-                  flex: 6,
-                  child: ui.bidiText(
-                    entries[i].value,
-                    bold: true,
-                    align: ui.alignEnd,
-                  ),
-                ),
-              ],
-            ),
+        for (final entry in meta.entries)
+          pw.Column(
+            crossAxisAlignment: ui.crossStart,
+            children: [
+              ui.microLabel(entry.key, color: theme.mutedText),
+              pw.SizedBox(height: theme.spacing * 0.35),
+              ui.bidiText(entry.value, bold: true),
+            ],
           ),
-        ],
       ],
     );
   }
@@ -282,45 +279,39 @@ class PdfSections {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          for (final entry in lines.entries) ...[
+          // No rule between the running lines: they are one group, and a
+          // hairline after each turned the summary into a ledger.
+          for (final entry in lines.entries)
             ui.inlineWidgetField(entry.key, ui.money(entry.value)),
-            ui.rule(),
-          ],
-          for (final entry in textLines.entries) ...[
+          for (final entry in textLines.entries)
             ui.inlineField(entry.key, entry.value),
-            ui.rule(),
-          ],
           pw.Container(
-            margin: pw.EdgeInsets.only(top: theme.spacing * 0.5),
-            padding: pw.EdgeInsets.symmetric(
-              horizontal: theme.spacing,
-              vertical: theme.spacing * 0.7,
-            ),
+            margin: pw.EdgeInsets.only(top: theme.spacing * 0.7),
+            padding: pw.EdgeInsets.only(top: theme.spacing * 0.7),
             decoration: pw.BoxDecoration(
-              color: theme.accent,
-              borderRadius: pw.BorderRadius.circular(theme.radius),
+              border: pw.Border(
+                top: pw.BorderSide(color: theme.accent, width: 0.9),
+              ),
             ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            // The amount due carries itself at display size in the accent
+            // colour. A solid bar behind it read as a screen button, not as
+            // the figure a reader's eye is meant to land on.
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                ui.text(
-                  totalLabel,
-                  color: theme.onAccent,
-                  bold: true,
-                  size: theme.headingSize,
-                ),
-                ui.gapX(0.5),
+                ui.microLabel(totalLabel, color: theme.mutedText),
+                pw.SizedBox(height: theme.spacing * 0.35),
                 ui.money(
                   totalValue,
-                  color: theme.onAccent,
+                  color: theme.accent,
                   bold: true,
-                  size: theme.headingSize,
+                  size: theme.displaySize,
                 ),
               ],
             ),
           ),
           if (paidValue != null) ...[
-            pw.SizedBox(height: theme.spacing * 0.4),
+            pw.SizedBox(height: theme.spacing * 0.6),
             ui.inlineWidgetField(paidLabel ?? 'Paid', ui.money(paidValue)),
           ],
           if (dueValue != null)
@@ -354,36 +345,22 @@ class PdfSections {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          for (final entry in lines.entries) ...[
+          for (final entry in lines.entries)
             ui.inlineField(entry.key, entry.value),
-            ui.rule(),
-          ],
           pw.Container(
-            margin: pw.EdgeInsets.only(top: theme.spacing * 0.5),
-            padding: pw.EdgeInsets.symmetric(
-              horizontal: theme.spacing,
-              vertical: theme.spacing * 0.7,
-            ),
+            margin: pw.EdgeInsets.only(top: theme.spacing * 0.7),
+            padding: pw.EdgeInsets.only(top: theme.spacing * 0.7),
             decoration: pw.BoxDecoration(
-              color: theme.accent,
-              borderRadius: pw.BorderRadius.circular(theme.radius),
+              border: pw.Border(
+                top: pw.BorderSide(color: theme.accent, width: 0.9),
+              ),
             ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                ui.text(
-                  totalLabel,
-                  color: theme.onAccent,
-                  bold: true,
-                  size: theme.headingSize,
-                ),
-                ui.gapX(0.5),
-                ui.text(
-                  totalValue,
-                  color: theme.onAccent,
-                  bold: true,
-                  size: theme.headingSize,
-                ),
+                ui.microLabel(totalLabel, color: theme.mutedText),
+                pw.SizedBox(height: theme.spacing * 0.35),
+                ui.display(totalValue, color: theme.accent),
               ],
             ),
           ),
@@ -405,15 +382,14 @@ class PdfSections {
   /// than another boxed field.
   pw.Widget notes(String value, {String label = 'NOTES'}) {
     final theme = ui.theme;
-    final content = pw.Column(
+    return pw.Column(
       crossAxisAlignment: ui.crossStart,
       children: [
-        ui.microLabel(label, color: theme.accent),
-        pw.SizedBox(height: theme.spacing * 0.4),
-        ui.text(value, lineSpacing: 1.8),
+        ui.microLabel(label, color: theme.mutedText),
+        pw.SizedBox(height: theme.spacing * 0.5),
+        ui.text(value, color: theme.mutedText, lineSpacing: 2.2),
       ],
     );
-    return ui.accentBar(color: theme.accentMuted, child: content);
   }
 
   /// A labelled block of short lines — bank details, delivery terms — for the
@@ -424,7 +400,7 @@ class PdfSections {
     return pw.Column(
       crossAxisAlignment: ui.crossStart,
       children: [
-        ui.microLabel(label, color: theme.accent),
+        ui.microLabel(label, color: theme.mutedText),
         pw.SizedBox(height: theme.spacing * 0.5),
         for (final entry in lines.entries)
           pw.Padding(
@@ -463,19 +439,22 @@ class PdfSections {
             child: pw.Column(
               crossAxisAlignment: ui.crossStart,
               children: [
-                pw.SizedBox(height: theme.spacing * 3.5),
-                ui.rule(color: theme.mutedText),
-                pw.SizedBox(height: theme.spacing * 0.45),
-                ui.microLabel(labels[i]),
+                pw.SizedBox(height: theme.spacing * 2.1),
+                ui.rule(color: theme.border),
+                pw.SizedBox(height: theme.spacing * 0.4),
+                ui.microLabel(labels[i], color: theme.mutedText),
                 if (i < names.length && names[i].isNotEmpty) ...[
                   pw.SizedBox(height: theme.spacing * 0.2),
                   ui.bidiText(names[i]),
                 ],
                 if (withDate) ...[
-                  pw.SizedBox(height: theme.spacing * 1.6),
+                  pw.SizedBox(height: theme.spacing * 1.0),
                   ui.rule(),
-                  pw.SizedBox(height: theme.spacing * 0.45),
-                  ui.microLabel(ui.bilingual('Date', 'التاريخ')),
+                  pw.SizedBox(height: theme.spacing * 0.4),
+                  ui.microLabel(
+                    ui.bilingual('Date', 'التاريخ'),
+                    color: theme.mutedText,
+                  ),
                 ],
               ],
             ),

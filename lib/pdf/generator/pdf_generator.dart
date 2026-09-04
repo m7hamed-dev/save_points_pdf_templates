@@ -33,7 +33,7 @@ class PdfGenerator {
     await config.init();
 
     final document = pw.Document(
-      title: title ?? template.title,
+      title: title ?? template.documentName,
       author: author ?? config.company?.name,
       subject: subject,
       creator: creator ?? 'save_points_pdf_templates',

@@ -39,8 +39,12 @@ abstract class PdfBaseInvoiceModel {
   /// The English label to print: [title] when set, otherwise [type].
   String get displayTitle => title.isNotEmpty ? title : type.english;
 
-  /// The Arabic label to print.
-  String get displayTitleAr => type.arabic;
+  /// The Arabic label to print, empty when [title] is set.
+  ///
+  /// A custom title is one string in a language the model does not know, so it
+  /// replaces the pair rather than joining it — printing it beside [type]'s
+  /// Arabic would caption `Stock Count` as `تقرير`.
+  String get displayTitleAr => title.isNotEmpty ? '' : type.arabic;
 }
 
 /// Base class for documents made of priced line items.
