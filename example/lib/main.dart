@@ -315,6 +315,123 @@ class _DemoHomeState extends State<DemoHome> {
                 ),
           ),
           _DocumentTile(
+            title: 'Purchase order',
+            subtitle: 'Sent to a supplier, with a delivery address',
+            onTap:
+                () => _preview(
+                  PurchaseOrderTemplate(
+                    data: PdfPurchaseOrderModel(
+                      id: 'PO-2026-0031',
+                      date: DateTime.now(),
+                      supplier: demoCustomer,
+                      items: demoItems,
+                      expectedDate: DateTime.now().add(
+                        const Duration(days: 14),
+                      ),
+                      deliveryAddress: 'Warehouse 4, Industrial City, Riyadh',
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Credit note',
+            subtitle: 'Names the invoice it corrects, and why',
+            onTap:
+                () => _preview(
+                  CreditNoteTemplate(
+                    data: PdfCreditNoteModel(
+                      id: 'CN-2026-0003',
+                      date: DateTime.now(),
+                      customer: demoCustomer,
+                      items: const [
+                        PdfInvoiceItemModel(
+                          title: 'HP ProBook 450 G10',
+                          qty: 1,
+                          price: 3200,
+                          unit: 'pcs',
+                          taxRate: 15,
+                        ),
+                      ],
+                      againstInvoice: 'INV-2026-0042',
+                      againstInvoiceDate: DateTime(2026, 9, 3),
+                      reason: 'One unit returned, manufacturing defect.',
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Payslip',
+            subtitle: 'Earnings beside deductions, net pay beneath',
+            onTap:
+                () => _preview(
+                  PayslipTemplate(
+                    data: const PdfPayslipModel(
+                      id: 'PS-2026-09-014',
+                      employee: PdfPartyModel(name: 'Mohamed Syed'),
+                      employeeNumber: 'EMP-0142',
+                      jobTitle: 'Software Engineer',
+                      periodLabel: 'September 2026',
+                      paymentMethod: 'Bank transfer',
+                      earnings: [
+                        PdfPayLine(label: 'Basic salary', amount: 12000),
+                        PdfPayLine(label: 'Housing allowance', amount: 3000),
+                        PdfPayLine(label: 'Transport allowance', amount: 800),
+                        PdfPayLine(
+                          label: 'Overtime',
+                          amount: 450,
+                          note: '6 hours',
+                        ),
+                      ],
+                      deductions: [
+                        PdfPayLine(label: 'GOSI', amount: 1350, note: '9%'),
+                        PdfPayLine(label: 'Salary advance', amount: 1000),
+                      ],
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Till receipt (80mm)',
+            subtitle: 'A roll that grows to fit — one column, no grid',
+            onTap:
+                () => _preview(
+                  ThermalReceiptTemplate(
+                    data: PdfSaleInvoiceModel(
+                      id: 'R-7781',
+                      date: DateTime.now(),
+                      type: PdfInvoiceType.posInvoice,
+                      items: const [
+                        PdfInvoiceItemModel(
+                          title: 'Coffee beans 250g',
+                          qty: 2,
+                          price: 45,
+                          unit: 'bag',
+                          taxRate: 15,
+                        ),
+                        PdfInvoiceItemModel(
+                          title: 'Travel mug',
+                          qty: 1,
+                          price: 65,
+                          taxRate: 15,
+                        ),
+                        PdfInvoiceItemModel(
+                          title: 'Date pastry',
+                          qty: 3,
+                          price: 12,
+                          taxRate: 15,
+                        ),
+                      ],
+                    ),
+                    pdfConfig: _config,
+                    qrCode: 'https://example.com/r/7781',
+                    footerNote: 'Thank you — exchanges within 14 days',
+                  ),
+                ),
+          ),
+          _DocumentTile(
             title: 'Tabular report',
             subtitle: 'Raw rows, paginated over multiple pages',
             onTap:
