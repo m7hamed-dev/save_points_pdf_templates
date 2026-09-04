@@ -39,7 +39,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
 
   /// Label above the party card — `BILL TO` for a sale, `PAID TO` for an
   /// expense.
-  String get partyLabel => tr('BILL TO', 'فاتورة إلى');
+  String get partyLabel => labels.billTo;
 
   /// Whether the document deals in money at all.
   ///
@@ -65,9 +65,9 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// reason a reader looks at the top of the page.
   String? get statusLabel {
     if (!showSettlement) return null;
-    if (data.isFullyPaid) return tr('PAID', 'مدفوعة');
-    if (data.isOverdueOn(asOf)) return tr('OVERDUE', 'متأخرة');
-    return tr('UNPAID', 'غير مدفوعة');
+    if (data.isFullyPaid) return labels.statusPaid;
+    if (data.isOverdueOn(asOf)) return labels.statusOverdue;
+    return labels.statusUnpaid;
   }
 
   PdfColor? get statusColor =>
@@ -78,46 +78,37 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
 
   /// Money columns name the currency once in the header — `Unit Price (SAR)` —
   /// so cells stay numeric and the columns stay narrow.
-  String moneyHeader(String english, String arabic) =>
-      '${tr(english, arabic)}\n(${pdfConfig.currency})';
+  String moneyHeader(String label) => '$label\n(${pdfConfig.currency})';
 
   /// Columns of the item table. Override to add or drop a column.
   List<PdfColumnSpec> get columns => [
-    PdfColumnSpec(tr('Description', 'البيان'), flex: 3.6),
+    PdfColumnSpec(labels.description, flex: 3.6),
     // Sized to their content: these two carry short values under a label that
     // is one unbreakable word in Arabic, and a flex share narrow enough for
     // `Qty` splits `الكمية` down the middle.
-    PdfColumnSpec(
-      tr('Qty', 'الكمية'),
-      align: PdfCellAlign.center,
-      intrinsic: true,
-    ),
+    PdfColumnSpec(labels.quantity, align: PdfCellAlign.center, intrinsic: true),
     if (hasUnits)
-      PdfColumnSpec(
-        tr('Unit', 'الوحدة'),
-        align: PdfCellAlign.center,
-        intrinsic: true,
-      ),
+      PdfColumnSpec(labels.unit, align: PdfCellAlign.center, intrinsic: true),
     if (showPricing) ...[
       PdfColumnSpec(
-        moneyHeader('Unit Price', 'سعر الوحدة'),
+        moneyHeader(labels.unitPrice),
         flex: 1.5,
         align: PdfCellAlign.end,
       ),
       if (data.itemsDiscount > 0)
         PdfColumnSpec(
-          moneyHeader('Discount', 'الخصم'),
+          moneyHeader(labels.discount),
           flex: 1.3,
           align: PdfCellAlign.end,
         ),
       if (data.itemsTax > 0)
         PdfColumnSpec(
-          moneyHeader('Tax', 'الضريبة'),
+          moneyHeader(labels.tax),
           flex: 1.3,
           align: PdfCellAlign.end,
         ),
       PdfColumnSpec(
-        moneyHeader('Amount', 'الإجمالي'),
+        moneyHeader(labels.amount),
         flex: 1.6,
         align: PdfCellAlign.end,
       ),
@@ -146,13 +137,10 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
 
   /// Key/value pairs in the meta card next to the party.
   Map<String, String> get metaFields => {
-    tr('Date', 'التاريخ'): format.longDate(data.date),
-    if (data.dueDate != null)
-      tr('Due', 'الاستحقاق'): format.longDate(data.dueDate),
-    if (data.reference?.isNotEmpty ?? false)
-      tr('Reference', 'المرجع'): data.reference!,
-    if (data.paymentMethod.isNotEmpty)
-      tr('Payment', 'طريقة الدفع'): data.paymentMethod,
+    labels.date: format.longDate(data.date),
+    if (data.dueDate != null) labels.dueDate: format.longDate(data.dueDate),
+    if (data.reference?.isNotEmpty ?? false) labels.reference: data.reference!,
+    if (data.paymentMethod.isNotEmpty) labels.paymentMethod: data.paymentMethod,
   };
 
   /// Lines shown beside the totals panel, in the space that would otherwise
@@ -160,23 +148,20 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   ///
   /// An empty key renders the value on its own, unlabelled.
   Map<String, String> get settlementLines => {
-    if (data.paymentMethod.isNotEmpty)
-      tr('Method', 'الطريقة'): data.paymentMethod,
+    if (data.paymentMethod.isNotEmpty) labels.method: data.paymentMethod,
     if (showSettlement)
-      tr('Status', 'الحالة'):
-          data.isFullyPaid
-              ? tr('Settled in full', 'مسددة بالكامل')
-              : tr('Partially settled', 'مسددة جزئياً'),
+      labels.status:
+          data.isFullyPaid ? labels.settledInFull : labels.partiallySettled,
   };
 
   /// Label above [settlementLines].
-  String get settlementLabel => tr('PAYMENT', 'الدفع');
+  String get settlementLabel => labels.payment;
 
   /// Rows above the accent total bar, as raw amounts. The panel formats them
   /// so the figure and the currency stay separate text runs.
   Map<String, double> get totalLines => {
-    tr('Subtotal', 'الإجمالي الفرعي'): data.subtotal,
-    if (data.totalDiscount > 0) tr('Discount', 'الخصم'): -data.totalDiscount,
+    labels.subtotal: data.subtotal,
+    if (data.totalDiscount > 0) labels.discount: -data.totalDiscount,
     if (data.totalTax > 0) taxLineLabel: data.totalTax,
   };
 
@@ -186,7 +171,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// One or the other, never both: naming the rate here *and* listing it under
   /// the totals says the same thing twice.
   String get taxLineLabel {
-    final label = tr('Tax', 'الضريبة');
+    final label = labels.tax;
     if (showTaxBreakdown) return label;
     final charged = data.taxBreakdown.where((band) => band.rate > 0).toList();
     if (charged.length != 1) return label;
@@ -199,15 +184,16 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
-    titleEn: title.isNotEmpty ? title : data.type.english,
-    // An explicit title is one string in an unknown language, so it
-    // stands alone rather than being captioned by the type's Arabic.
-    titleAr: title.isNotEmpty ? '' : arabicTitle(data.type.arabic),
+    titleEn: title.isNotEmpty ? title : labels.documentType(data.type),
+    // An explicit title is one string in an unknown language, so it stands
+    // alone rather than being captioned by a name in another.
+    titleAr:
+        title.isNotEmpty ? '' : arabicTitle(labels.documentSubtitle(data.type)),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,
     documentNumber: data.id,
-    documentNumberLabel: tr('No.', 'رقم'),
+    documentNumberLabel: labels.documentNumber,
     statusLabel: statusLabel,
     statusColor: statusColor,
   );
@@ -226,13 +212,12 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
     ],
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
-      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+      sections.notes(data.notes!, label: labels.notes),
     ],
     if (showSignatures) ...[
       ui.gap(1.5),
       sections.signatures(
-        signatureLabels ??
-            [tr('Issued by', 'المحرر'), tr('Received by', 'المستلم')],
+        signatureLabels ?? [labels.issuedBy, labels.receivedBy],
       ),
     ],
   ];
@@ -254,7 +239,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
                 : PdfDataTable.columnsFromHeaders(headers),
         rows: rows,
         rowNumbers: showRowNumbers,
-        emptyPlaceholder: tr('No items', 'لا توجد عناصر'),
+        emptyPlaceholder: labels.noItems,
       ).build();
 
   /// Whether to spell out what was taxed at each rate. Shown only when the
@@ -266,10 +251,10 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
       pw.Expanded(child: pw.SizedBox()),
       sections.taxBreakdown(
         data.taxBreakdown,
-        label: tr('TAX BREAKDOWN', 'تفصيل الضريبة'),
-        baseLabel: tr('Taxable', 'الوعاء'),
-        rateLabel: tr('Rate', 'النسبة'),
-        taxLabel: tr('Tax', 'الضريبة'),
+        label: labels.taxBreakdown,
+        baseLabel: labels.taxableAmount,
+        rateLabel: labels.taxRate,
+        taxLabel: labels.tax,
       ),
     ],
   );
@@ -277,11 +262,11 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   pw.Widget buildTotals() => sections.totalsPanel(
     leading: sections.infoBlock(settlementLabel, settlementLines),
     lines: totalLines,
-    totalLabel: tr('TOTAL', 'الإجمالي'),
+    totalLabel: labels.total,
     totalValue: data.total,
-    paidLabel: tr('Paid', 'المدفوع'),
+    paidLabel: labels.paid,
     paidValue: showSettlement ? data.paid : null,
-    dueLabel: tr('Balance Due', 'المتبقي'),
+    dueLabel: labels.balanceDue,
     dueValue: showSettlement && !data.isFullyPaid ? data.due : null,
   );
 }

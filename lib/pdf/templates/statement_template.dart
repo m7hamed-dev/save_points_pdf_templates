@@ -51,32 +51,39 @@ class StatementOfAccountTemplate extends BaseTemplate<PdfStatementModel> {
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
-    titleEn: title.isNotEmpty ? title : data.displayTitle,
-    titleAr: title.isNotEmpty ? '' : arabicTitle(data.displayTitleAr),
+    titleEn: title.isNotEmpty ? title : documentTitle,
+    titleAr: title.isNotEmpty ? '' : arabicTitle(documentSubtitle),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,
     documentNumber: data.id,
-    documentNumberLabel: tr('No.', 'رقم'),
+    documentNumberLabel: labels.documentNumber,
   );
 
   /// The period the statement covers, and what was owed going into it.
   Map<String, String> get metaFields => {
     if (data.periodStart != null)
-      tr('From', 'من'): format.longDate(data.periodStart),
+      labels.periodFrom: format.longDate(data.periodStart),
     if (data.periodEnd != null)
-      tr('To', 'إلى'): format.longDate(data.periodEnd),
-    tr('Opening balance', 'الرصيد الافتتاحي'): format.number(
-      data.openingBalance,
-    ),
+      labels.periodTo: format.longDate(data.periodEnd),
+    labels.openingBalance: format.number(data.openingBalance),
   };
+
+  /// The document's own name: the model's `title` when it set one, otherwise
+  /// the name the label set gives its type.
+  String get documentTitle =>
+      data.title.isNotEmpty ? data.title : labels.documentType(data.type);
+
+  /// The smaller name under it, empty when the model named itself.
+  String get documentSubtitle =>
+      data.title.isNotEmpty ? '' : labels.documentSubtitle(data.type);
 
   @override
   List<pw.Widget> body(pw.Context context) => [
     ui.gap(1.5),
     sections.partyAndMeta(
       party: data.customer,
-      partyLabel: tr('STATEMENT FOR', 'كشف حساب'),
+      partyLabel: labels.statementFor,
       meta: metaFields,
       qrData: qrCode,
       qrSize: qrCodeSize,
@@ -92,16 +99,16 @@ class StatementOfAccountTemplate extends BaseTemplate<PdfStatementModel> {
     ],
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
-      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+      sections.notes(data.notes!, label: labels.notes),
     ],
   ];
 
   List<PdfColumnSpec> get columns => [
-    PdfColumnSpec(tr('Date', 'التاريخ'), intrinsic: true),
-    PdfColumnSpec(tr('Details', 'البيان'), flex: 3.4),
-    PdfColumnSpec(tr('Debit', 'مدين'), flex: 1.4, align: PdfCellAlign.end),
-    PdfColumnSpec(tr('Credit', 'دائن'), flex: 1.4, align: PdfCellAlign.end),
-    PdfColumnSpec(tr('Balance', 'الرصيد'), flex: 1.6, align: PdfCellAlign.end),
+    PdfColumnSpec(labels.date, intrinsic: true),
+    PdfColumnSpec(labels.details, flex: 3.4),
+    PdfColumnSpec(labels.debit, flex: 1.4, align: PdfCellAlign.end),
+    PdfColumnSpec(labels.credit, flex: 1.4, align: PdfCellAlign.end),
+    PdfColumnSpec(labels.balance, flex: 1.6, align: PdfCellAlign.end),
   ];
 
   /// The opening balance leads the table as a row of its own, so the balance
@@ -109,13 +116,7 @@ class StatementOfAccountTemplate extends BaseTemplate<PdfStatementModel> {
   List<List<String>> get rows {
     final balances = data.runningBalances;
     return [
-      [
-        '',
-        tr('Opening balance', 'الرصيد الافتتاحي'),
-        '',
-        '',
-        format.number(data.openingBalance),
-      ],
+      ['', labels.openingBalance, '', '', format.number(data.openingBalance)],
       for (var i = 0; i < data.entries.length; i++)
         [
           format.date(data.entries[i].date),
@@ -141,19 +142,16 @@ class StatementOfAccountTemplate extends BaseTemplate<PdfStatementModel> {
         columns: columns,
         rows: rows,
         rowNumbers: showRowNumbers,
-        emptyPlaceholder: tr('No movements', 'لا توجد حركات'),
+        emptyPlaceholder: labels.noMovements,
       ).build();
 
   /// Totals for the period, then the figure the whole document exists for.
   pw.Widget buildSummary() => sections.totalsPanel(
     lines: {
-      tr('Total debit', 'إجمالي المدين'): data.totalDebit,
-      tr('Total credit', 'إجمالي الدائن'): data.totalCredit,
+      labels.totalDebit: data.totalDebit,
+      labels.totalCredit: data.totalCredit,
     },
-    totalLabel:
-        data.isInCredit
-            ? tr('BALANCE IN CREDIT', 'الرصيد لكم')
-            : tr('BALANCE DUE', 'الرصيد المستحق'),
+    totalLabel: data.isInCredit ? labels.balanceInCredit : labels.balanceOwed,
     totalValue: data.closingBalance.abs(),
   );
 }

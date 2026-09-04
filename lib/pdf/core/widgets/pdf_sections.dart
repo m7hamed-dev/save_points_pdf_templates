@@ -98,14 +98,11 @@ class PdfSections {
               ],
               if (company?.taxNumber?.isNotEmpty ?? false) ...[
                 pw.SizedBox(height: ui.theme.spacing * 0.2),
-                _registration(
-                  ui.bilingual('VAT', 'الرقم الضريبي'),
-                  company!.taxNumber!,
-                ),
+                _registration(ui.labels.vat, company!.taxNumber!),
               ],
               if (company?.commercialRegister?.isNotEmpty ?? false)
                 _registration(
-                  ui.bilingual('CR', 'السجل التجاري'),
+                  ui.labels.commercialRegister,
                   company!.commercialRegister!,
                 ),
             ],
@@ -217,7 +214,7 @@ class PdfSections {
         ],
         if (party.taxNumber?.isNotEmpty ?? false) ...[
           pw.SizedBox(height: theme.spacing * 0.3),
-          _registration(ui.bilingual('VAT', 'الرقم الضريبي'), party.taxNumber!),
+          _registration(ui.labels.vat, party.taxNumber!),
         ],
       ],
     );
@@ -530,10 +527,7 @@ class PdfSections {
                   pw.SizedBox(height: theme.spacing * 1.0),
                   ui.rule(),
                   pw.SizedBox(height: theme.spacing * 0.4),
-                  ui.microLabel(
-                    ui.bilingual('Date', 'التاريخ'),
-                    color: theme.mutedText,
-                  ),
+                  ui.microLabel(ui.labels.date, color: theme.mutedText),
                 ],
               ],
             ),
@@ -553,7 +547,7 @@ class PdfSections {
   }) {
     final page =
         pageLabel ??
-        '${ui.bilingual('Page', 'صفحة')} '
+        '${ui.labels.page} '
             '${context.pageNumber} / ${context.pagesCount}';
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,

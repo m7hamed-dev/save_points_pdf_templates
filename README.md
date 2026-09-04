@@ -43,6 +43,7 @@ final bytes = await PdfGenerator.generate(
 - [Templates](#-templates)
 - [Configuration](#️-configuration)
 - [Theming](#-theming)
+- [Labels & languages](#️-labels--languages)
 - [Arabic & RTL](#-arabic--rtl)
 - [Output](#-output)
 - [Custom Templates](#-custom-templates)
@@ -59,6 +60,8 @@ final bytes = await PdfGenerator.generate(
 |---------|-------------|
 | 🧾 **Typed documents** | Sales invoices, expense records, receipt and payment vouchers, minimal invoices and free-form tabular reports |
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
+| 🗣️ **Any language** | Every word the package prints is a named getter on `PdfLabels` — a third language is a subclass, not a fork of every template |
+| ©️ **Copy marks** | `DRAFT`, `COPY`, `VOID` set diagonally behind the page, the one thing that survives a photocopier |
 | 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
 | 🧮 **Totals that add up** | Discount and tax as an amount *or* a rate, per line or per document, with a tax breakdown by rate for a GCC tax invoice |
@@ -300,6 +303,31 @@ Pass it on the config for every document, or per template to override one:
 ```dart
 SaleInvoiceTemplate(data: invoice, pdfConfig: config, theme: theme);
 ```
+
+## 🗣️ Labels & languages
+
+Every word the package prints is a getter on `PdfLabels`. English is the
+default, Arabic comes automatically in a right-to-left document whose font can
+draw it, and anything else is a subclass:
+
+```dart
+class FrenchLabels extends PdfLabels {
+  const FrenchLabels();
+  @override String get billTo => 'FACTURER À';
+  @override String get subtotal => 'Sous-total';
+  @override String documentType(PdfInvoiceType type) => 'Facture de vente';
+  @override String documentSubtitle(PdfInvoiceType type) => '';
+  // …everything not overridden stays English.
+}
+
+final config = PdfConfig(locale: 'fr', labels: const FrenchLabels());
+```
+
+That covers the document's own name too, so a French invoice is not headed
+`Sales Invoice` — in the page, in the PDF's `/Title` and in the file name.
+
+Use `BaseTemplate.tr(english, arabic)` only for a label of your own in a custom
+template; it takes exactly two languages, which is what `PdfLabels` replaced.
 
 ## 🌍 Arabic & RTL
 

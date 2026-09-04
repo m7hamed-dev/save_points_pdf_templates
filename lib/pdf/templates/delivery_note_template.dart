@@ -36,21 +36,19 @@ class DeliveryNoteTemplate
   bool get showPricing => false;
 
   @override
-  String get partyLabel => tr('DELIVER TO', 'تسليم إلى');
+  String get partyLabel => labels.deliverTo;
 
   @override
   Map<String, String> get metaFields => {
     ...super.metaFields,
     if (data.deliveryAddress?.isNotEmpty ?? false)
-      tr('Address', 'العنوان'): data.deliveryAddress!,
-    if (data.carrier?.isNotEmpty ?? false)
-      tr('Carrier', 'الناقل'): data.carrier!,
+      labels.address: data.deliveryAddress!,
+    if (data.carrier?.isNotEmpty ?? false) labels.carrier: data.carrier!,
   };
 
   /// The two people who matter on a delivery note are the one who handed the
   /// goods over and the one who took them.
   @override
   List<String> get signatureLabels =>
-      super.signatureLabels ??
-      [tr('Delivered by', 'المُسلِّم'), tr('Received by', 'المستلم')];
+      super.signatureLabels ?? [labels.deliveredBy, labels.receivedBy];
 }

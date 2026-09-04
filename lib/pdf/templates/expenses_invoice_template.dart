@@ -22,17 +22,15 @@ class ExpensesInvoiceTemplate
   });
 
   @override
-  String get partyLabel => tr('PAID TO', 'صرف إلى');
+  String get partyLabel => labels.paidTo;
 
   @override
   Map<String, String> get metaFields => {
-    if (data.category?.isNotEmpty ?? false)
-      tr('Category', 'التصنيف'): data.category!,
+    if (data.category?.isNotEmpty ?? false) labels.category: data.category!,
     ...super.metaFields,
   };
 
   @override
   List<String> get signatureLabels =>
-      super.signatureLabels ??
-      [tr('Approved by', 'المعتمد'), tr('Paid by', 'الصارف')];
+      super.signatureLabels ?? [labels.approvedBy, labels.paidBy];
 }

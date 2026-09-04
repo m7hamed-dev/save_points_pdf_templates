@@ -47,16 +47,25 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
-    titleEn: title.isNotEmpty ? title : data.displayTitle,
+    titleEn: title.isNotEmpty ? title : documentTitle,
     // An explicit title is one string in an unknown language, so it
     // stands alone rather than being captioned by the type's Arabic.
-    titleAr: title.isNotEmpty ? '' : arabicTitle(data.displayTitleAr),
+    titleAr: title.isNotEmpty ? '' : arabicTitle(documentSubtitle),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,
     documentNumber: data.id,
-    documentNumberLabel: tr('No.', 'رقم'),
+    documentNumberLabel: labels.documentNumber,
   );
+
+  /// The document's own name: the model's `title` when it set one, otherwise
+  /// the name the label set gives its type.
+  String get documentTitle =>
+      data.title.isNotEmpty ? data.title : labels.documentType(data.type);
+
+  /// The smaller name under it, empty when the model named itself.
+  String get documentSubtitle =>
+      data.title.isNotEmpty ? '' : labels.documentSubtitle(data.type);
 
   @override
   List<pw.Widget> body(pw.Context context) => [
@@ -64,7 +73,7 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
     if (data.customer.isNotEmpty || _meta.isNotEmpty || qrCode.isNotEmpty) ...[
       sections.partyAndMeta(
         party: data.customer,
-        partyLabel: tr('FOR', 'إلى'),
+        partyLabel: labels.reportFor,
         meta: _meta,
         qrData: qrCode,
         qrSize: qrCodeSize,
@@ -76,21 +85,20 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
     if (data.summary.isNotEmpty) ...[ui.gap(1.5), _summary()],
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
-      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+      sections.notes(data.notes!, label: labels.notes),
     ],
   ];
 
   Map<String, String> get _meta => {
-    if (data.date != null) tr('Date', 'التاريخ'): format.longDate(data.date),
-    if (data.reference?.isNotEmpty ?? false)
-      tr('Reference', 'المرجع'): data.reference!,
-    tr('Rows', 'عدد السطور'): format.quantity(data.items.length.toDouble()),
+    if (data.date != null) labels.date: format.longDate(data.date),
+    if (data.reference?.isNotEmpty ?? false) labels.reference: data.reference!,
+    labels.rowCount: format.quantity(data.items.length.toDouble()),
   };
 
   pw.Widget _table() {
     final columns =
         effectiveHeaders.isEmpty
-            ? <PdfColumnSpec>[PdfColumnSpec(tr('Value', 'القيمة'))]
+            ? <PdfColumnSpec>[PdfColumnSpec(labels.value)]
             : [
               for (var i = 0; i < effectiveHeaders.length; i++)
                 PdfColumnSpec(
@@ -105,7 +113,7 @@ class ListStringsTemplate extends BaseTemplate<PdfListStringsModel> {
       columns: columns,
       rows: data.items,
       rowNumbers: showRowNumbers,
-      emptyPlaceholder: tr('No rows', 'لا توجد بيانات'),
+      emptyPlaceholder: labels.noRows,
     ).build();
   }
 

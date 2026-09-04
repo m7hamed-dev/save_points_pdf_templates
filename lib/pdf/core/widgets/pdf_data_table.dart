@@ -51,6 +51,7 @@ class PdfDataTable {
     this.rowNumberLabel = '#',
     this.emptyPlaceholder,
     this.emphasizeLastColumn = true,
+    this.carryForward,
   });
 
   final PdfUi ui;
@@ -73,6 +74,14 @@ class PdfDataTable {
   /// Sets the final column in bold. On an invoice that column is the line
   /// amount, which is what a reader scans for.
   final bool emphasizeLastColumn;
+
+  /// Labels for the carried-forward rows on a table that spans pages.
+  ///
+  /// A long document breaks between rows, and a reader who turns the page has
+  /// no idea what the lines above it added up to. Supplying this closes each
+  /// page with a `Carried forward` row and opens the next with `Brought
+  /// forward`, the way a ledger does.
+  final PdfCarryForward? carryForward;
 
   /// Builds columns from plain header strings, giving the first column twice
   /// the width and right-aligning every numeric column after it.
@@ -149,6 +158,69 @@ class PdfDataTable {
           ),
       ],
     );
+  }
+
+  /// The table split into chunks of [rowsPerPage], each closing with a
+  /// `Carried forward` row and the next opening with `Brought forward`.
+  ///
+  /// Returned as separate blocks so the renderer breaks between them, and
+  /// meant to be spread into a template's `body`:
+  ///
+  /// ```dart
+  /// @override
+  /// List<pw.Widget> body(pw.Context context) => [
+  ///   ...buildItemsTable().buildPaginated(rowsPerPage: 24),
+  /// ];
+  /// ```
+  ///
+  /// The split is yours to choose rather than measured, and deliberately so:
+  /// how many rows fit depends on the font's metrics and on how tall the
+  /// header and footer come out, and a carried-forward line placed by a guess
+  /// is worse than none — it would claim a total for rows that are not above
+  /// it. Set it once for your layout and the figures are exact.
+  List<pw.Widget> buildPaginated({required int rowsPerPage}) {
+    assert(rowsPerPage > 0, 'a page has to hold at least one row');
+    final carry = carryForward;
+    final data = _effectiveRows;
+    if (carry == null || data.length <= rowsPerPage) return [build()];
+
+    final cols = _effectiveColumns;
+    final chunks = <pw.Widget>[];
+    for (var start = 0; start < data.length; start += rowsPerPage) {
+      final end = (start + rowsPerPage).clamp(0, data.length);
+      chunks.add(
+        _table(cols, [
+          if (start > 0)
+            _carryRow(cols, carry, carry.broughtLabel, carry.totalAfter(start)),
+          ...data.sublist(start, end),
+          if (end < data.length)
+            _carryRow(cols, carry, carry.carriedLabel, carry.totalAfter(end)),
+        ]),
+      );
+    }
+    return chunks;
+  }
+
+  /// A row that states the running total and nothing else.
+  List<String> _carryRow(
+    List<PdfColumnSpec> cols,
+    PdfCarryForward carry,
+    String label,
+    double total,
+  ) {
+    // The label sits in the first column that carries text — past the row
+    // number, which would be meaningless on a total.
+    final labelIndex = rowNumbers ? 1 : 0;
+    final valueIndex = carry.column + (rowNumbers ? 1 : 0);
+    return [
+      for (var i = 0; i < cols.length; i++)
+        if (i == labelIndex)
+          label
+        else if (i == valueIndex)
+          carry.format(total)
+        else
+          '',
+    ];
   }
 
   pw.TableColumnWidth _widthOf(PdfColumnSpec column) {
@@ -262,4 +334,38 @@ class PdfDataTable {
         return ui.alignStart;
     }
   }
+}
+
+/// How a table that spans pages carries its running total across the break.
+///
+/// A two-hundred-line invoice breaks between rows, and a reader who turns the
+/// page cannot tell what the lines above added up to. An accountant expects
+/// the page to close with a subtotal and the next to open with the same
+/// figure — without it the pages after the first are unauditable on their own.
+class PdfCarryForward {
+  const PdfCarryForward({
+    required this.column,
+    required this.values,
+    required this.format,
+    this.carriedLabel = 'Carried forward',
+    this.broughtLabel = 'Brought forward',
+  });
+
+  /// Index of the column the running total belongs in, in logical order —
+  /// usually the amount column, the last one.
+  final int column;
+
+  /// The value of each row, in the same order as the table's rows.
+  final List<double> values;
+
+  /// How to render the running figure. Pass the document's own money format
+  /// so the carried figure matches the column above it.
+  final String Function(double) format;
+
+  final String carriedLabel;
+  final String broughtLabel;
+
+  /// The running total after [count] rows.
+  double totalAfter(int count) =>
+      values.take(count).fold(0.0, (sum, value) => sum + value);
 }

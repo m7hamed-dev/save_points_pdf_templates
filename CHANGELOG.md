@@ -124,6 +124,27 @@ design has been rebuilt around type and space instead of boxes and rules.
   line while a single-script one kept them — an item description sat under its
   title in English and beside it in Arabic.
 
+- **`PdfLabels`** — every word the package prints, as a named getter. The
+  templates switched between two hard-coded strings inline, which made the
+  package bilingual by construction: a third language meant editing every
+  template. It is now a subclass, and that covers the document's own name, so
+  a French invoice is not headed `Sales Invoice` in the page, in the PDF's
+  `/Title` or in the file name. `PdfArabicLabels` is the Arabic set, chosen
+  automatically by a right-to-left config whose font can draw it.
+- **A watermark behind the page** — `BaseTemplate.watermark` and `background`,
+  drawn by `PdfUi.watermark`. A printout carries no metadata to say it is a
+  copy, and a diagonal mark is the only thing that survives a photocopier.
+  `PdfLabels` names `COPY`, `DRAFT`, `ORIGINAL` and `DUPLICATE`.
+- **Carried-forward totals** — `PdfCarryForward` and
+  `PdfDataTable.buildPaginated`. A long table breaks between rows and a reader
+  who turns the page cannot tell what the lines above added up to; each page
+  now closes with `Carried forward` and the next opens with the same figure.
+  The split is given rather than measured, and deliberately so: how many rows
+  fit depends on the font's metrics, and a carried line placed by a guess
+  would claim a total for rows that are not above it.
+- `PdfGenerator.generate(compress: false)`, for output whose text can be
+  searched in the bytes.
+
 ### Removed
 
 - `PdfUi.money`'s `alignment` argument, which silently did nothing: a row

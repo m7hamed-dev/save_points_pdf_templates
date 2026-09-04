@@ -28,11 +28,17 @@ class PdfGenerator {
     /// Safety valve: rendering aborts past this many pages instead of looping
     /// on content that can never fit.
     int maxPages = 200,
+
+    /// Compresses the page content. Turn it off for a larger file whose text
+    /// can be searched in the bytes — useful when diffing output, and what an
+    /// archival workflow sometimes asks for.
+    bool compress = true,
   }) async {
     final config = template.pdfConfig;
     await config.init();
 
     final document = pw.Document(
+      compress: compress,
       title: title ?? template.documentName,
       author: author ?? config.company?.name,
       subject: subject,
@@ -41,15 +47,22 @@ class PdfGenerator {
 
     document.addPage(
       pw.MultiPage(
-        pageFormat: template.pageFormat,
-        margin: template.theme.margin.insets,
-        textDirection: config.textDirection,
-        theme: pw.ThemeData.withFont(
-          base: config.font,
-          bold: config.boldFont,
-          italic: config.font,
-          boldItalic: config.boldFont,
-          fontFallback: config.fontFallbacks,
+        // A page theme rather than the loose arguments, because that is the
+        // only place a background can be given — and the background is what
+        // carries a watermark under every page.
+        pageTheme: pw.PageTheme(
+          pageFormat: template.pageFormat,
+          margin: template.theme.margin.insets,
+          textDirection: config.textDirection,
+          theme: pw.ThemeData.withFont(
+            base: config.font,
+            bold: config.boldFont,
+            italic: config.font,
+            boldItalic: config.boldFont,
+            fontFallback: config.fontFallbacks,
+          ),
+          buildBackground:
+              (context) => template.background(context) ?? pw.SizedBox(),
         ),
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         header: (context) => template.header(context) ?? pw.SizedBox(),

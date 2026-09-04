@@ -39,15 +39,16 @@ abstract class VoucherTemplate<T extends PdfVoucherModel>
 
   @override
   pw.Widget? header(pw.Context context) => sections.documentHeader(
-    titleEn: title.isNotEmpty ? title : data.type.english,
+    titleEn: title.isNotEmpty ? title : labels.documentType(data.type),
     // An explicit title is one string in an unknown language, so it stands
-    // alone rather than being captioned by the type's Arabic.
-    titleAr: title.isNotEmpty ? '' : arabicTitle(data.type.arabic),
+    // alone rather than being captioned by a name in another.
+    titleAr:
+        title.isNotEmpty ? '' : arabicTitle(labels.documentSubtitle(data.type)),
     company: company,
     logo: logo,
     logoSize: pdfConfig.logoSize,
     documentNumber: data.id,
-    documentNumberLabel: tr('No.', 'رقم'),
+    documentNumberLabel: labels.documentNumber,
   );
 
   @override
@@ -62,20 +63,17 @@ abstract class VoucherTemplate<T extends PdfVoucherModel>
         // The figure already dominates the block above; repeating it as a
         // field would print the same amount twice.
         if (data.amountInWords?.isNotEmpty ?? false)
-          ui.dottedField(tr('In words', 'فقط وقدره'), data.amountInWords!),
-        ui.dottedField(
-          tr('Payment method', 'وذلك عن طريق'),
-          data.paymentMethod,
-        ),
-        ui.dottedField(tr('For', 'وذلك عن'), data.statement),
-        ui.dottedField(tr('Date', 'بتاريخ'), format.longDate(data.date)),
+          ui.dottedField(labels.inWords, data.amountInWords!),
+        ui.dottedField(labels.voucherMethod, data.paymentMethod),
+        ui.dottedField(labels.voucherFor, data.statement),
+        ui.dottedField(labels.voucherDate, format.longDate(data.date)),
         if (data.reference?.isNotEmpty ?? false)
-          ui.dottedField(tr('Reference', 'المرجع'), data.reference!),
+          ui.dottedField(labels.reference, data.reference!),
       ],
     ),
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
-      sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
+      sections.notes(data.notes!, label: labels.notes),
     ],
     ui.gap(2.5),
     pw.Row(
@@ -92,7 +90,7 @@ abstract class VoucherTemplate<T extends PdfVoucherModel>
         pw.Expanded(
           child: pw.Padding(
             padding: pw.EdgeInsets.only(top: theme.spacing * 3.5),
-            child: ui.stampArea(tr('Stamp', 'الختم')),
+            child: ui.stampArea(labels.stamp),
           ),
         ),
       ],

@@ -47,6 +47,7 @@ export 'pdf/models/pdf_voucher_model.dart';
 // ── Configuration ─────────────────────────────────────────────────────────
 export 'pdf/pdf_config/pdf_cairo_config.dart';
 export 'pdf/pdf_config/pdf_config.dart';
+export 'pdf/pdf_config/pdf_labels.dart';
 export 'pdf/pdf_config/pdf_theme.dart';
 
 // ── Output ────────────────────────────────────────────────────────────────

@@ -30,15 +30,11 @@ class ReceiptVoucherTemplate extends VoucherTemplate<ReceiptVoucherModel> {
   });
 
   @override
-  String get amountLabel => tr('AMOUNT RECEIVED', 'المبلغ المستلم');
+  String get amountLabel => labels.amountReceived;
 
   @override
-  String get counterpartyLabel =>
-      tr('Received from', 'استلمنا من السيد / السيدة');
+  String get counterpartyLabel => labels.receivedFrom;
 
   @override
-  List<String> get defaultSignatureLabels => [
-    tr('Received by', 'المستلم'),
-    tr('Payer', 'المسلّم'),
-  ];
+  List<String> get defaultSignatureLabels => [labels.receivedBy, labels.payer];
 }

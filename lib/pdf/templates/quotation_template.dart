@@ -26,14 +26,12 @@ class QuotationTemplate extends ItemizedInvoiceTemplate<PdfQuotationModel> {
   bool get showSettlement => false;
 
   @override
-  String get partyLabel => tr('QUOTED TO', 'عرض إلى');
+  String get partyLabel => labels.quotedTo;
 
   @override
   String? get statusLabel {
     if (data.validUntil == null) return null;
-    return data.isExpiredOn(asOf)
-        ? tr('EXPIRED', 'منتهي')
-        : tr('VALID', 'ساري');
+    return data.isExpiredOn(asOf) ? labels.statusExpired : labels.statusValid;
   }
 
   @override
@@ -44,22 +42,20 @@ class QuotationTemplate extends ItemizedInvoiceTemplate<PdfQuotationModel> {
   Map<String, String> get metaFields => {
     ...super.metaFields,
     if (data.validUntil != null)
-      tr('Valid until', 'ساري حتى'): format.longDate(data.validUntil),
+      labels.validUntil: format.longDate(data.validUntil),
   };
 
   @override
-  String get settlementLabel => tr('TERMS', 'الشروط');
+  String get settlementLabel => labels.terms;
 
   @override
   Map<String, String> get settlementLines => {
-    if (data.paymentMethod.isNotEmpty)
-      tr('Payment', 'الدفع'): data.paymentMethod,
+    if (data.paymentMethod.isNotEmpty) labels.payment: data.paymentMethod,
     if (data.terms?.isNotEmpty ?? false) '': data.terms!,
   };
 
   /// A quotation is signed to accept it, not to acknowledge receipt.
   @override
   List<String> get signatureLabels =>
-      super.signatureLabels ??
-      [tr('Quoted by', 'المُعِد'), tr('Accepted by', 'الموافقة')];
+      super.signatureLabels ?? [labels.quotedBy, labels.acceptedBy];
 }

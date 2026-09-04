@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/core/formatters/pdf_formatters.dart';
+import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_labels.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_theme.dart';
 
 /// Horizontal alignment of a table column.
@@ -29,12 +30,17 @@ class PdfUi {
   const PdfUi({
     required this.theme,
     required this.formatters,
+    this.labels = const PdfLabels(),
     this.isRtl = false,
     this.canRenderArabic = false,
   });
 
   final PdfTheme theme;
   final PdfFormatters formatters;
+
+  /// Every word the shared blocks print.
+  final PdfLabels labels;
+
   final bool isRtl;
 
   /// Whether the configured font has Arabic glyphs. When false, bilingual
@@ -695,6 +701,35 @@ class PdfUi {
         drawText: false,
         color: theme.text,
       );
+
+  /// A word set diagonally across the whole page — `DRAFT`, `COPY`, `PAID`.
+  ///
+  /// Drawn very pale on purpose: a watermark that competes with the figures
+  /// makes the document harder to read, and the point of the mark is that it
+  /// cannot be removed from a printout, not that it shouts.
+  pw.Widget watermark(
+    String value, {
+    PdfColor? color,
+    double opacity = 0.06,
+    double angle = 0.65,
+    double? size,
+  }) {
+    return pw.Center(
+      child: pw.Opacity(
+        opacity: opacity,
+        child: pw.Transform.rotate(
+          angle: angle,
+          child: text(
+            value.toUpperCase(),
+            size: size ?? theme.titleSize * 4,
+            color: color ?? theme.accent,
+            bold: true,
+            align: pw.TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Logo box that keeps the image inside [size] without distorting it.
   pw.Widget logo(Uint8List bytes, {double size = 46}) => pw.SizedBox(

@@ -8,6 +8,7 @@ import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_ui.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_base_invoice_model.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_config.dart';
+import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_labels.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_theme.dart';
 
 /// Contract every document template implements.
@@ -76,6 +77,7 @@ abstract class BaseTemplate<T> {
   late final PdfUi ui = PdfUi(
     theme: theme,
     formatters: pdfConfig.formatters,
+    labels: pdfConfig.effectiveLabels,
     isRtl: pdfConfig.isRtl,
     canRenderArabic: pdfConfig.canRenderArabic,
   );
@@ -88,13 +90,28 @@ abstract class BaseTemplate<T> {
 
   bool get isRtl => pdfConfig.isRtl;
 
-  /// The Arabic sub-title to print, or an empty string when the configured
-  /// font cannot draw Arabic. See [PdfConfig.canRenderArabic].
-  String arabicTitle(String value) => pdfConfig.canRenderArabic ? value : '';
+  /// A sub-title, dropped when the configured font cannot draw it.
+  ///
+  /// Only right-to-left text is at risk — that is what the built-in fonts and
+  /// most Latin faces have no glyphs for — so a Latin sub-title from a custom
+  /// [PdfLabels] passes through untouched. See [PdfConfig.canRenderArabic].
+  String arabicTitle(String value) {
+    if (value.isEmpty || pdfConfig.canRenderArabic) return value;
+    return PdfUi.directionOf(value) == pw.TextDirection.rtl ? '' : value;
+  }
 
-  /// Picks the label matching the document direction. Templates use it for
-  /// their own chrome — `tr('Subtotal', 'الإجمالي الفرعي')` — so one template
-  /// serves both languages instead of shipping two.
+  /// Every word this template prints, from [PdfConfig.labels].
+  ///
+  /// Prefer this over [tr] for anything the package itself says: a label named
+  /// here can be reworded or translated by overriding one getter, while a pair
+  /// of strings written inline can only be changed by forking the template.
+  PdfLabels get labels => pdfConfig.effectiveLabels;
+
+  /// Picks between two strings by document direction, for a label of your own
+  /// that [labels] does not name.
+  ///
+  /// Bilingual by construction — it takes exactly two languages — so it is a
+  /// convenience for a custom template, not the way the package speaks.
   ///
   /// Falls back to [english] when the configured font cannot draw Arabic, the
   /// same guard [PdfUi.bilingual] applies: an Arabic label the font has no
@@ -118,9 +135,11 @@ abstract class BaseTemplate<T> {
     if (title.isNotEmpty) return title;
     final model = data;
     if (model is! PdfBaseInvoiceModel) return 'Document';
-    return model.id.isEmpty
-        ? model.displayTitle
-        : '${model.displayTitle} ${model.id}';
+    // Through the labels, not the type directly: a French document should not
+    // be filed away as `Sales Invoice`.
+    final label =
+        model.title.isNotEmpty ? model.title : labels.documentType(model.type);
+    return model.id.isEmpty ? label : '$label ${model.id}';
   }
 
   /// The name to save or share this document under, `.pdf` appended when it
@@ -154,7 +173,20 @@ abstract class BaseTemplate<T> {
   pw.Widget? footer(pw.Context context) =>
       sections.pageFooter(context, note: company?.name);
 
-  /// Blocks appended after [body]. Override to add terms, an annex or a
-  /// second copy of the document.
+  /// Blocks appended after [body]. Override to add terms or an annex.
   List<pw.Widget> appendix(pw.Context context) => const [];
+
+  /// A word set diagonally behind every page — `DRAFT`, `COPY`, `VOID`.
+  ///
+  /// Empty by default. Set it when the document must not be mistaken for the
+  /// original: a printout has no metadata to say so, and a diagonal mark is
+  /// the only thing that survives a photocopier.
+  String get watermark => '';
+
+  /// Painted behind the page content, under the header and the footer.
+  ///
+  /// Override for a letterhead or a pre-printed background; the default draws
+  /// [watermark] when there is one.
+  pw.Widget? background(pw.Context context) =>
+      watermark.isEmpty ? null : ui.watermark(watermark);
 }

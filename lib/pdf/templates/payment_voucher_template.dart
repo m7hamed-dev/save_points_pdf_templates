@@ -34,14 +34,11 @@ class PaymentVoucherTemplate extends VoucherTemplate<PaymentVoucherModel> {
   });
 
   @override
-  String get amountLabel => tr('AMOUNT PAID', 'المبلغ المصروف');
+  String get amountLabel => labels.amountPaid;
 
   @override
-  String get counterpartyLabel => tr('Paid to', 'صرفنا إلى السيد / السيدة');
+  String get counterpartyLabel => labels.disbursedTo;
 
   @override
-  List<String> get defaultSignatureLabels => [
-    tr('Paid by', 'الصارف'),
-    tr('Received by', 'المستلم'),
-  ];
+  List<String> get defaultSignatureLabels => [labels.paidBy, labels.receivedBy];
 }

@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/core/formatters/pdf_formatters.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
+import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_labels.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_theme.dart';
 
 /// Everything a template needs that is *not* document data: fonts, logo,
@@ -46,6 +47,7 @@ class PdfConfig {
     this.currencyDecimals = 2,
     this.locale = 'en',
     this.theme = const PdfTheme(),
+    this.labels,
     this.pageFormat = PdfPageFormat.a4,
     this.strictFonts = false,
     this.logoSize = 46.0,
@@ -89,6 +91,11 @@ class PdfConfig {
 
   /// Colors, type scale and spacing.
   final PdfTheme theme;
+
+  /// Every word the package prints. Leave null to get English, or Arabic in a
+  /// right-to-left document whose font can draw it; pass a [PdfLabels]
+  /// subclass for any other language, or to reword the defaults.
+  final PdfLabels? labels;
 
   /// Default page format; a template may override it.
   final PdfPageFormat pageFormat;
@@ -192,6 +199,15 @@ class PdfConfig {
 
   pw.TextDirection get textDirection =>
       isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+
+  /// The labels a document is printed with.
+  ///
+  /// Arabic is chosen for a right-to-left document only when the font can
+  /// actually draw it — the same guard the rest of the package applies, since
+  /// an Arabic label the font has no glyphs for is a row of blank boxes.
+  PdfLabels get effectiveLabels =>
+      labels ??
+      (isRtl && canRenderArabic ? const PdfArabicLabels() : const PdfLabels());
 
   /// Money, number and date formatting bound to [locale] and [currency].
   ///
