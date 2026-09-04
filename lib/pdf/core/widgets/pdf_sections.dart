@@ -25,6 +25,10 @@ class PdfSections {
   ///        VAT 300000000000003              INV-2026-0042
   /// ═══════════════════════════════════════════════════════
   /// ```
+  /// [titleEn] is the name printed largest and [titleAr] the smaller one
+  /// under it, whatever languages those are — the parameter names are
+  /// historical. Which language each carries is `PdfLabels`' decision, so an
+  /// Arabic document leads in Arabic without this block having to know.
   pw.Widget documentHeader({
     required String titleEn,
     required String titleAr,
@@ -120,12 +124,12 @@ class PdfSections {
     String? statusLabel,
     PdfColor? statusColor,
   }) {
-    // Lead with the label in the document's own language. An Arabic invoice
-    // whose largest type is `Sales Invoice` reads as an English document that
-    // happens to be mirrored. [titleAr] is already empty when the font cannot
-    // draw Arabic, which falls the lead back to English on its own.
-    final lead = ui.isRtl && titleAr.isNotEmpty ? titleAr : titleEn;
-    final secondary = ui.isRtl && titleAr.isNotEmpty ? titleEn : titleAr;
+    // No swapping by direction here any more: the label set has already
+    // decided what language the document speaks, and swapping again turned an
+    // Arabic invoice back into `Purchase Order` with Arabic underneath.
+    // [titleEn] leads, [titleAr] sits under it — whatever languages they are.
+    final lead = titleEn;
+    final secondary = titleAr;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,

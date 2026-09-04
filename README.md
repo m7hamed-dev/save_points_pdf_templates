@@ -58,7 +58,7 @@ final bytes = await PdfGenerator.generate(
 
 | Feature | Description |
 |---------|-------------|
-| 🧾 **Typed documents** | Sales invoices, expense records, receipt and payment vouchers, minimal invoices and free-form tabular reports |
+| 🧾 **Thirteen documents** | Invoices, expenses, quotations, purchase orders, delivery notes, credit and debit notes, receipt and payment vouchers, statements, payslips, till receipts and free-form reports |
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 🗣️ **Any language** | Every word the package prints is a named getter on `PdfLabels` — a third language is a subclass, not a fork of every template |
 | ©️ **Copy marks** | `DRAFT`, `COPY`, `VOID` set diagonally behind the page, the one thing that survives a photocopier |
@@ -165,6 +165,10 @@ Navigator.of(context).push(MaterialPageRoute(
 | `QuotationTemplate` | `PdfQuotationModel` | Priced but not owed — valid until a date, signed to accept |
 | `DeliveryNoteTemplate` | `PdfDeliveryNoteModel` | The item table with every price taken out, plus a receipt signature |
 | `StatementOfAccountTemplate` | `PdfStatementModel` | Opening balance, movements, a running balance and what is owed |
+| `PurchaseOrderTemplate` | `PdfPurchaseOrderModel` | Addressed to a supplier, with a delivery address and an expected date |
+| `CreditNoteTemplate` / `DebitNoteTemplate` | `PdfCreditNoteModel` / `PdfDebitNoteModel` | Names the invoice it corrects and why, above the signatures |
+| `PayslipTemplate` | `PdfPayslipModel` | Earnings beside deductions, net pay beneath — the net is computed |
+| `ThermalReceiptTemplate` | any itemized model | An 80mm or 57mm till roll: one column, no grid, page grows to fit |
 | `ListStringsTemplate` | `PdfListStringsModel` | Free-form table: you supply headers and rows, it supplies the chrome |
 
 <details>

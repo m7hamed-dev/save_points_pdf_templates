@@ -158,6 +158,35 @@ class PdfLabels {
   String get balanceOwed => 'BALANCE DUE';
   String get balanceInCredit => 'BALANCE IN CREDIT';
 
+  // ── Purchase order ───────────────────────────────────────────────────────
+
+  String get supplier => 'SUPPLIER';
+  String get expectedDelivery => 'Expected';
+  String get orderedBy => 'Ordered by';
+
+  // ── Credit and debit notes ───────────────────────────────────────────────
+
+  String get againstInvoice => 'Against invoice';
+  String get reason => 'REASON';
+  String get creditedTo => 'CREDITED TO';
+  String get debitedTo => 'DEBITED TO';
+  String get totalCredited => 'TOTAL CREDITED';
+  String get totalDebited => 'TOTAL DEBITED';
+
+  // ── Payslip ──────────────────────────────────────────────────────────────
+
+  /// A payslip has no [PdfInvoiceType] of its own, so it is named here.
+  String get payslip => 'Payslip';
+  String get employee => 'EMPLOYEE';
+  String get employeeId => 'Employee no.';
+  String get jobTitle => 'Position';
+  String get payPeriod => 'Period';
+  String get earnings => 'EARNINGS';
+  String get deductions => 'DEDUCTIONS';
+  String get grossPay => 'Gross pay';
+  String get totalDeductions => 'Total deductions';
+  String get netPay => 'NET PAY';
+
   // ── Marks ────────────────────────────────────────────────────────────────
 
   String get copy => 'COPY';
@@ -340,6 +369,47 @@ class PdfArabicLabels extends PdfLabels {
   String get balanceOwed => 'الرصيد المستحق';
   @override
   String get balanceInCredit => 'الرصيد لكم';
+
+  @override
+  String get supplier => 'المورّد';
+  @override
+  String get expectedDelivery => 'التسليم المتوقع';
+  @override
+  String get orderedBy => 'الطالب';
+
+  @override
+  String get againstInvoice => 'بخصوص الفاتورة';
+  @override
+  String get reason => 'السبب';
+  @override
+  String get creditedTo => 'إشعار دائن إلى';
+  @override
+  String get debitedTo => 'إشعار مدين إلى';
+  @override
+  String get totalCredited => 'إجمالي الإشعار الدائن';
+  @override
+  String get totalDebited => 'إجمالي الإشعار المدين';
+
+  @override
+  String get payslip => 'قسيمة راتب';
+  @override
+  String get employee => 'الموظف';
+  @override
+  String get employeeId => 'الرقم الوظيفي';
+  @override
+  String get jobTitle => 'المسمى الوظيفي';
+  @override
+  String get payPeriod => 'الفترة';
+  @override
+  String get earnings => 'الاستحقاقات';
+  @override
+  String get deductions => 'الاستقطاعات';
+  @override
+  String get grossPay => 'إجمالي الاستحقاق';
+  @override
+  String get totalDeductions => 'إجمالي الاستقطاع';
+  @override
+  String get netPay => 'صافي الراتب';
 
   @override
   String get copy => 'نسخة';

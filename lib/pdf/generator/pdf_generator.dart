@@ -45,25 +45,48 @@ class PdfGenerator {
       creator: creator ?? 'save_points_pdf_templates',
     );
 
+    final pageTheme = pw.PageTheme(
+      pageFormat: template.pageFormat,
+      margin: template.theme.margin.insets,
+      textDirection: config.textDirection,
+      theme: pw.ThemeData.withFont(
+        base: config.font,
+        bold: config.boldFont,
+        italic: config.font,
+        boldItalic: config.boldFont,
+        fontFallback: config.fontFallbacks,
+      ),
+      buildBackground:
+          (context) => template.background(context) ?? pw.SizedBox(),
+    );
+
+    // A roll has no height — it grows to whatever is printed on it — and
+    // `MultiPage` cannot paginate what has no page to fill. A receipt is one
+    // continuous strip, so it goes on a single page that stretches instead.
+    if (template.pageFormat.height == double.infinity) {
+      document.addPage(
+        pw.Page(
+          pageTheme: pageTheme,
+          build:
+              (context) => pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                mainAxisSize: pw.MainAxisSize.min,
+                children: [
+                  ...template.body(context),
+                  ...template.appendix(context),
+                ],
+              ),
+        ),
+      );
+      return document.save();
+    }
+
     document.addPage(
       pw.MultiPage(
         // A page theme rather than the loose arguments, because that is the
         // only place a background can be given — and the background is what
         // carries a watermark under every page.
-        pageTheme: pw.PageTheme(
-          pageFormat: template.pageFormat,
-          margin: template.theme.margin.insets,
-          textDirection: config.textDirection,
-          theme: pw.ThemeData.withFont(
-            base: config.font,
-            bold: config.boldFont,
-            italic: config.font,
-            boldItalic: config.boldFont,
-            fontFallback: config.fontFallbacks,
-          ),
-          buildBackground:
-              (context) => template.background(context) ?? pw.SizedBox(),
-        ),
+        pageTheme: pageTheme,
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         header: (context) => template.header(context) ?? pw.SizedBox(),
         footer: (context) => template.footer(context) ?? pw.SizedBox(),

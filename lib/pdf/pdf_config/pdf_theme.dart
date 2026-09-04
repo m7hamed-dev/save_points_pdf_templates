@@ -117,6 +117,36 @@ class PdfTheme {
         headerStyle: PdfTableHeaderStyle.filled,
       );
 
+  /// Sized for a receipt roll: small type, hairline margins, no fills.
+  ///
+  /// A till receipt is read at arm's length for a few seconds and then filed
+  /// or thrown away, and the paper is 80mm wide with no margin to spare — so
+  /// this trades every gram of elegance for fitting.
+  const PdfTheme.thermal()
+    : this(
+        accent: const PdfColor.fromInt(0xFF000000),
+        text: const PdfColor.fromInt(0xFF000000),
+        mutedText: const PdfColor.fromInt(0xFF444444),
+        border: const PdfColor.fromInt(0xFF999999),
+        surface: PdfColors.white,
+        zebra: PdfColors.white,
+        displaySize: 12.0,
+        titleSize: 13.0,
+        headingSize: 9.0,
+        bodySize: 7.5,
+        captionSize: 6.5,
+        spacing: 4.0,
+        radius: 0.0,
+        borderWidth: 0.4,
+        labelTracking: 0.3,
+        titleTracking: 0.0,
+        tableHeaderHeight: 12.0,
+        tableRowHeight: 12.0,
+        showZebraStripes: false,
+        showRowRules: false,
+        margin: const PdfMargin.symmetric(horizontal: 6, vertical: 8),
+      );
+
   /// Ink on paper and nothing else: no fills, no row rules, the widest
   /// margins of the three. For pre-printed stationery and letterheads.
   const PdfTheme.minimal({PdfColor accent = const PdfColor.fromInt(0xFF111827)})

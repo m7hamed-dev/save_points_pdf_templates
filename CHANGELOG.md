@@ -119,6 +119,11 @@ design has been rebuilt around type and space instead of boxes and rules.
 - A long document type no longer pushes the issuer block out of the masthead.
 - The page footer follows the document's language. `Page 1 / 2` was hard-coded
   in English and sat under every Arabic document.
+- `PdfSections.documentHeader` no longer swaps the two titles by direction.
+  That was right while the templates chose the language inline; with
+  `PdfLabels` doing it, swapping again turned an Arabic purchase order back
+  into `Purchase Order` with Arabic underneath. It now prints what it is
+  handed, and the label set decides.
 - A line break inside a value survives `PdfUi.bidiText`. Runs are trimmed
   before layout, so a mixed-script value lost its breaks and reflowed into one
   line while a single-script one kept them — an item description sat under its
@@ -144,6 +149,25 @@ design has been rebuilt around type and space instead of boxes and rules.
   would claim a total for rows that are not above it.
 - `PdfGenerator.generate(compress: false)`, for output whose text can be
   searched in the bytes.
+- **`PurchaseOrderTemplate`** — priced lines addressed to a supplier, with a
+  delivery address and an expected date. Prices, because the supplier is being
+  told what you expect to pay; no balance, because nothing is owed until they
+  invoice you.
+- **`CreditNoteTemplate` and `DebitNoteTemplate`**, over a shared
+  `AdjustmentNoteTemplate`. Both name the invoice they correct and the reason,
+  above the signatures rather than after them — an auditor reads why before
+  somebody signs. Neither field is optional: a note that names neither cannot
+  be reconciled.
+- **`PayslipTemplate`** — earnings beside deductions rather than one column of
+  signed numbers, because that is the comparison an employee actually makes.
+  Net pay is computed; a slip whose net does not reconcile is a dispute.
+- **`ThermalReceiptTemplate`** and `PdfTheme.thermal()` — an 80mm or 57mm till
+  roll. Not a narrower invoice: one column, no table, nothing boxed (a thermal
+  head prints a fill as a solid black band), and each line over two rows. A
+  roll has no height, so `PdfGenerator` puts it on a single page that stretches
+  instead of asking `MultiPage` to paginate what has no page to fill.
+- `ItemizedInvoiceTemplate.extraBlocks`, for a block between the notes and the
+  signatures.
 
 ### Removed
 

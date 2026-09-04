@@ -248,29 +248,42 @@ void main() {
     });
   });
 
-  // The masthead used to print the English label as the largest type in every
-  // document, with the Arabic demoted to a muted sub-title — an Arabic invoice
-  // that reads as an English one that happens to be mirrored.
+  // An Arabic invoice whose largest type was `Sales Invoice` read as an
+  // English document that happened to be mirrored. Which language leads is now
+  // `PdfLabels`' decision, so the masthead prints what it is handed.
   group('PdfSections.documentHeader', () {
-    Future<List<DrawnRun>> masthead({required bool rtl}) => drawnRuns(
-      PdfSections(
-        uiFor(rtl: rtl),
-      ).documentHeader(titleEn: 'Sales Invoice', titleAr: 'فاتورة مبيعات'),
-      rtl: rtl,
-      fallback: arabicFont,
-    );
-
     DrawnRun largest(List<DrawnRun> runs) =>
         runs.reduce((a, b) => a.size >= b.size ? a : b);
 
-    test('leads with Arabic in an Arabic document', () async {
-      final runs = await masthead(rtl: true);
-      expect(largest(runs).isLatin, isFalse, reason: 'got $runs');
+    test('prints the first title largest, whatever language it is', () async {
+      final arabicLeads = await drawnRuns(
+        PdfSections(
+          uiFor(rtl: true),
+        ).documentHeader(titleEn: 'فاتورة مبيعات', titleAr: 'Sales Invoice'),
+        rtl: true,
+        fallback: arabicFont,
+      );
+      expect(largest(arabicLeads).isLatin, isFalse, reason: '$arabicLeads');
+
+      final latinLeads = await drawnRuns(
+        PdfSections(
+          uiFor(rtl: false),
+        ).documentHeader(titleEn: 'Sales Invoice', titleAr: 'فاتورة مبيعات'),
+        rtl: false,
+        fallback: arabicFont,
+      );
+      expect(largest(latinLeads).isLatin, isTrue, reason: '$latinLeads');
     });
 
-    test('leads with English in an English document', () async {
-      final runs = await masthead(rtl: false);
-      expect(largest(runs).isLatin, isTrue, reason: 'got $runs');
+    test('the label set is what picks the language', () {
+      const english = PdfLabels();
+      const arabic = PdfArabicLabels();
+      const type = PdfInvoiceType.salesInvoice;
+      expect(english.documentType(type), 'Sales Invoice');
+      expect(arabic.documentType(type), 'فاتورة مبيعات');
+      // Each names the other underneath it.
+      expect(english.documentSubtitle(type), arabic.documentType(type));
+      expect(arabic.documentSubtitle(type), english.documentType(type));
     });
 
     test('an unpaired title is not captioned by itself', () async {

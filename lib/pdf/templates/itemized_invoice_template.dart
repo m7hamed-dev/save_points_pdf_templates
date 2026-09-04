@@ -214,6 +214,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
       ui.gap(1.5),
       sections.notes(data.notes!, label: labels.notes),
     ],
+    ...extraBlocks(context),
     if (showSignatures) ...[
       ui.gap(1.5),
       sections.signatures(
@@ -221,6 +222,10 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
       ),
     ],
   ];
+
+  /// Blocks a subclass adds after the notes and before the signatures —
+  /// which is where anything a reader must see before signing belongs.
+  List<pw.Widget> extraBlocks(pw.Context context) => const [];
 
   pw.Widget buildPartyAndMeta() => sections.partyAndMeta(
     party: data.customer,
