@@ -43,12 +43,6 @@ class PdfPreviewPage<T> extends StatelessWidget {
   final bool allowPrinting;
   final double maxPageWidth;
 
-  String get _fileName {
-    final name = (fileName ?? template.documentName).trim();
-    if (name.isEmpty) return 'document.pdf';
-    return name.endsWith('.pdf') ? name : '$name.pdf';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,7 +56,7 @@ class PdfPreviewPage<T> extends StatelessWidget {
         canChangePageFormat: canChangePageFormat,
         allowSharing: allowSharing,
         allowPrinting: allowPrinting,
-        pdfFileName: _fileName,
+        pdfFileName: template.fileName(fileName),
         initialPageFormat: template.pageFormat,
         build: (_) => PdfGenerator.generate<T>(template: template),
       ),

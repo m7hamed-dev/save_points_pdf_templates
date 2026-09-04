@@ -17,6 +17,7 @@ const arabicFontPath =
 class DrawnRun {
   const DrawnRun({
     required this.x,
+    required this.y,
     required this.size,
     required this.text,
     required this.isLatin,
@@ -25,6 +26,9 @@ class DrawnRun {
   /// Horizontal offset inside the page's content stream. Larger is further
   /// right, in either direction.
   final double x;
+
+  /// Vertical offset. Runs on the same line share it.
+  final double y;
 
   /// Type size the run was set at.
   final double size;
@@ -47,7 +51,7 @@ class DrawnRun {
 
 /// `… Td [(text)]TJ` for a Latin run, `… Td [<glyphs>]TJ` for an embedded TTF.
 final _showText = RegExp(
-  r'/F\d+ ([\d.]+) Tf [-\d.]+ Tc (-?[\d.]+) -?[\d.]+ Td '
+  r'/F\d+ ([\d.]+) Tf [-\d.]+ Tc (-?[\d.]+) (-?[\d.]+) Td '
   r'\[(?:\((.*?)\)|<([0-9A-Fa-f]+)>)\]TJ',
 );
 
@@ -84,8 +88,9 @@ Future<List<DrawnRun>> drawnRuns(
       DrawnRun(
         size: double.parse(match.group(1)!),
         x: double.parse(match.group(2)!),
-        text: match.group(3) ?? match.group(4)!,
-        isLatin: match.group(3) != null,
+        y: double.parse(match.group(3)!),
+        text: match.group(4) ?? match.group(5)!,
+        isLatin: match.group(4) != null,
       ),
   ];
 }
@@ -208,6 +213,30 @@ void main() {
       final runs = await mixed(rtl: false);
       expect(leftmost(runs).isLatin, isFalse, reason: 'got $runs');
       expect(rightmost(runs).isLatin, isTrue);
+    });
+
+    // Runs are trimmed before layout, so a break inside a mixed-script value
+    // used to vanish while the same break in a single-script value survived —
+    // an item description sat under its title in English, beside it in Arabic.
+    test('an explicit line break survives in a mixed-script value', () async {
+      final runs = await drawnRuns(
+        uiFor(rtl: true).bidiText('عربي LATIN\nسطر ثانٍ'),
+        rtl: true,
+        fallback: arabicFont,
+      );
+      expect(
+        runs.map((run) => run.y).toSet(),
+        hasLength(2),
+        reason: 'both lines were drawn at the same height — got $runs',
+      );
+    });
+
+    test('a single-script value keeps its line breaks too', () async {
+      final runs = await drawnRuns(
+        uiFor(rtl: false).bidiText('first\nsecond'),
+        rtl: false,
+      );
+      expect(runs.map((run) => run.y).toSet(), hasLength(2));
     });
 
     test('a single-script value stays a plain text widget', () {

@@ -122,9 +122,6 @@ class PdfDataTable {
     return _table(cols, data);
   }
 
-  /// The header row on its own, for repeating it at the top of every page.
-  pw.Widget buildHeaderOnly() => _table(_effectiveColumns, const []);
-
   pw.Table _table(List<PdfColumnSpec> cols, List<List<String>> data) {
     final order = ui.isRtl ? cols.reversed.toList() : cols;
     // The emphasized column is the last one in *logical* order — the line

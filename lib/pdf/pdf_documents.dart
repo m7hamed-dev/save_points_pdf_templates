@@ -30,7 +30,7 @@ class PdfDocuments {
     final data = await bytes(template: template);
     return Printing.sharePdf(
       bytes: data,
-      filename: _withExtension(fileName ?? template.documentName),
+      filename: template.fileName(fileName),
       subject: subject,
       emails: emails,
     );
@@ -45,7 +45,7 @@ class PdfDocuments {
     final data = await bytes(template: template);
     return Printing.layoutPdf(
       onLayout: (_) => data,
-      name: jobName ?? _withExtension(template.documentName),
+      name: jobName ?? template.fileName(),
       format: format ?? template.pageFormat,
     );
   }
@@ -64,11 +64,5 @@ class PdfDocuments {
       return page.toPng();
     }
     return null;
-  }
-
-  static String _withExtension(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return 'document.pdf';
-    return trimmed.endsWith('.pdf') ? trimmed : '$trimmed.pdf';
   }
 }

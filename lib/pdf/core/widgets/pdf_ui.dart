@@ -215,6 +215,11 @@ class PdfUi {
   ///
   /// Single-script values fall through to [text] and keep normal line
   /// wrapping; only genuinely mixed values pay the layout cost.
+  ///
+  /// A line break the caller put in the value is honoured either way. Runs are
+  /// trimmed before layout, so a mixed-script value used to lose its breaks
+  /// and reflow into one line while a single-script one kept them — an item
+  /// description sat under its title in English and beside it in Arabic.
   pw.Widget bidiText(
     String value, {
     double? size,
@@ -222,6 +227,17 @@ class PdfUi {
     bool bold = false,
     pw.TextAlign? align,
   }) {
+    if (value.contains('\n')) {
+      return pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: _columnAlignment(align ?? alignStart),
+        children: [
+          for (final line in value.split('\n'))
+            bidiText(line, size: size, color: color, bold: bold, align: align),
+        ],
+      );
+    }
+
     final runs = [
       for (final run in splitRuns(value))
         if (run.text.trim().isNotEmpty)
@@ -316,16 +332,19 @@ class PdfUi {
   /// `'28,000.00 ر.س'` as one string would be laid out as mixed script and
   /// come out with the digits reversed; two runs render correctly in both
   /// directions.
+  ///
+  /// The amount and its currency are one unit, sized to their content — where
+  /// that unit sits is the surrounding widget's business. (An `alignment`
+  /// argument used to be accepted here and silently did nothing: a row shrunk
+  /// to its children has no free space to align them in.)
   pw.Widget money(
     double value, {
     double? size,
     PdfColor? color,
     bool bold = false,
-    pw.MainAxisAlignment alignment = pw.MainAxisAlignment.end,
   }) {
     return pw.Row(
       mainAxisSize: pw.MainAxisSize.min,
-      mainAxisAlignment: alignment,
       children: [
         text(
           formatters.number(value),
@@ -382,6 +401,25 @@ class PdfUi {
         text(second, size: size, color: color, bold: boldSecond),
       ],
     );
+  }
+
+  /// Where a stack of lines sits on the cross axis, folded from a visual
+  /// alignment the same way [_wrapAlignment] folds one — a column's `start` is
+  /// the right edge on a right-to-left page.
+  pw.CrossAxisAlignment _columnAlignment(pw.TextAlign align) {
+    switch (align) {
+      case pw.TextAlign.center:
+      case pw.TextAlign.justify:
+        return pw.CrossAxisAlignment.center;
+      case pw.TextAlign.right:
+        return isRtl ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.end;
+      case pw.TextAlign.left:
+        return isRtl ? pw.CrossAxisAlignment.end : pw.CrossAxisAlignment.start;
+      case pw.TextAlign.end:
+        return pw.CrossAxisAlignment.end;
+      case pw.TextAlign.start:
+        return pw.CrossAxisAlignment.start;
+    }
   }
 
   /// A wrap's alignment is logical — it mirrors its own main axis — so the

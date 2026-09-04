@@ -35,6 +35,9 @@ design has been rebuilt around type and space instead of boxes and rules.
 ### Added
 
 - `PdfTheme.displaySize` and `PdfTheme.showRowRules`.
+- `BaseTemplate.fileName`, which decides what a document is saved or shared
+  as. The preview page and the headless entry points now both ask it, instead
+  of each writing the rule out for itself.
 - `PdfColumnSpec.intrinsic`, which sizes a column to its content instead of a
   flex share.
 - `PdfUi.display`, the type style behind the amount due.
@@ -80,9 +83,25 @@ design has been rebuilt around type and space instead of boxes and rules.
   file was called `document.pdf`. `documentName` falls back to the model's
   label and number.
 - A long document type no longer pushes the issuer block out of the masthead.
+- A line break inside a value survives `PdfUi.bidiText`. Runs are trimmed
+  before layout, so a mixed-script value lost its breaks and reflowed into one
+  line while a single-script one kept them — an item description sat under its
+  title in English and beside it in Arabic.
+
+### Removed
+
+- `PdfUi.money`'s `alignment` argument, which silently did nothing: a row
+  shrunk to its children has no free space to align them in. The amount and
+  its currency are one unit; where that unit sits is the surrounding widget's
+  business.
+- `PdfDataTable.buildHeaderOnly`, which duplicated what the header row's own
+  `repeat` already does on every page.
 
 ### Notes
 
+- `PdfUi`, `PdfSections` and `PdfPreviewPage` are covered by tests for the
+  first time. Several primitives are used by no template in the package —
+  which is precisely why nothing would have noticed them breaking.
 - The layout is now covered by tests that read the drawn output — glyph
   positions in the page's content stream — rather than the widget tree, since
   the tree is identical in both directions and it is the renderer that decides

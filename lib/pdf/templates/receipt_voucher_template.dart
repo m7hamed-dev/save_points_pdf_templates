@@ -118,7 +118,6 @@ class ReceiptVoucherTemplate extends BaseTemplate<ReceiptVoucherModel> {
                     color: theme.accent,
                     bold: true,
                     size: theme.titleSize,
-                    alignment: pw.MainAxisAlignment.start,
                   ),
                 ],
               ),

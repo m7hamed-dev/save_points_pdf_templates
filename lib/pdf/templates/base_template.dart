@@ -123,6 +123,17 @@ abstract class BaseTemplate<T> {
         : '${model.displayTitle} ${model.id}';
   }
 
+  /// The name to save or share this document under, `.pdf` appended when it
+  /// is missing. [override] wins when given.
+  ///
+  /// Lives here rather than at each call site so the preview page and the
+  /// headless entry points cannot drift apart on what a file is called.
+  String fileName([String? override]) {
+    final name = (override ?? documentName).trim();
+    if (name.isEmpty) return 'document.pdf';
+    return name.endsWith('.pdf') ? name : '$name.pdf';
+  }
+
   /// The issuer, from the config.
   PdfPartyModel? get company => pdfConfig.company;
 
