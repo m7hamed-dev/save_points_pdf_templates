@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/save_points_pdf_templates.dart';
 
-const regularPath = 'assets/fonts/Cairo-Regular.ttf';
-const boldPath = 'assets/fonts/Cairo-Bold.ttf';
+const regularPath = 'assets/fonts/Regular.ttf';
+const boldPath = 'assets/fonts/Bold.ttf';
 const logoPath = 'assets/images/logo.png';
 const missingPath = 'assets/does-not-exist.ttf';
 
@@ -58,9 +58,13 @@ void main() {
   setUpAll(() {
     // Any real TTF will do; the example app's is the one in the repository.
     final ttf =
-        File('example/assets/fonts/Cairo/Cairo-Regular.ttf').readAsBytesSync();
+        File(
+          'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf',
+        ).readAsBytesSync();
     final bold =
-        File('example/assets/fonts/Cairo/Cairo-Bold.ttf').readAsBytesSync();
+        File(
+          'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf',
+        ).readAsBytesSync();
     bundle = FakeAssetBundle({
       regularPath: ttf,
       boldPath: bold,
@@ -136,7 +140,7 @@ void main() {
     setUp(() async {
       final font = pw.Font.ttf(
         File(
-          'example/assets/fonts/Cairo/Cairo-Regular.ttf',
+          'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf',
         ).readAsBytesSync().buffer.asByteData(),
       );
       config = PdfConfig(
@@ -214,7 +218,7 @@ void main() {
       // would leave the config permanently unable to draw Arabic.
       final font = pw.Font.ttf(
         File(
-          'example/assets/fonts/Cairo/Cairo-Regular.ttf',
+          'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf',
         ).readAsBytesSync().buffer.asByteData(),
       );
       final config = PdfConfig(font: font, logoBytes: logoBytes);

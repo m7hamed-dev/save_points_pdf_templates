@@ -19,7 +19,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/fonts/Cairo/Cairo-Regular.ttf
-    - assets/fonts/Cairo/Cairo-Bold.ttf
+    - assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf
+    - assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf
     - assets/fonts/Inter/Inter-Regular.ttf
     - assets/fonts/Inter/Inter-Bold.ttf

@@ -83,17 +83,24 @@ dependencies:
 ```yaml
 flutter:
   assets:
-    - assets/fonts/Cairo/Cairo-Regular.ttf
-    - assets/fonts/Cairo/Cairo-Bold.ttf
+    - assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf
+    - assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf
 ```
+
+> [!TIP]
+> For Arabic, pick a family that ships the legacy Arabic Presentation Forms-B
+> block — IBM Plex Sans Arabic and Noto Naskh Arabic do. Most Google Fonts
+> Arabic families, Cairo and Tajawal included, leave those shapes to OpenType,
+> and the renderer drops a word-final `ي` after `ر`, `ا`, `د`, `و` or `ز`.
+> See [Troubleshooting](#-troubleshooting).
 
 **2. Build a config once and keep it** — fonts and the logo are decoded on the
 first render and reused afterwards.
 
 ```dart
 final config = PdfConfig(
-  fontPath: 'assets/fonts/Cairo/Cairo-Regular.ttf',
-  boldFontPath: 'assets/fonts/Cairo/Cairo-Bold.ttf',
+  fontPath: 'assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf',
+  boldFontPath: 'assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf',
   logoPath: 'assets/images/logo.png',
   locale: 'ar',
   currency: 'ر.س',
@@ -218,7 +225,9 @@ final config = PdfConfig(
 ```
 
 `CairoPdfFontConfig` is a thin preset over the same class: Arabic locale,
-`SAR`, and Cairo asset paths your app declares.
+`SAR`, and Cairo asset paths your app declares. Point `fontPath` at a family
+that ships the Presentation Forms-B block before shipping Arabic documents —
+see the note above.
 
 </details>
 
@@ -386,7 +395,7 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 | `PdfTooBigPageException` | A block that never fits is retried on each page — usually a table nested in a column | Return the table as its own entry from `body` |
 | Numbers show as `3.00` where you wanted `3` | `format.number` always shows two decimals | Use `format.quantity` for counts |
 | Arabic letters look detached | Letter spacing applied to a connected script | Use `ui.microLabel` / `ui.text`, which drop tracking on RTL text |
-| An Arabic word loses its last letter — `التجاري` prints as `التجار` | The TTF has no isolated Arabic presentation forms (`U+FEF1`, `U+FEAD`…). A letter that ends a word after a non-connecting one — `ر`, `ا`, `د`, `و`, `ز` — needs the isolated form; without it the renderer substitutes a glyph whose advance is wrong and the letter collapses onto its neighbour | Use a build of the family that ships the full Arabic Presentation Forms-B range. Not every subset does, and two files of the same typeface can differ |
+| An Arabic word loses its last letter — `المتبقي` prints as `المتبق` | The renderer asks the font for the legacy Arabic Presentation Forms-B codepoints. Most Google Fonts Arabic families — Cairo and Tajawal among them — leave the contextual shapes to OpenType and never map that block, so the isolated `ي` (`U+FEF1`) resolves to nothing and the next glyph collapses onto it. It affects a word-final letter after a non-connecting one: `ر`, `ا`, `د`, `و`, `ز` | Use a family that ships the legacy block — IBM Plex Sans Arabic or Noto Naskh Arabic. The example app uses IBM Plex Sans Arabic for exactly this reason |
 | A font asset silently does nothing | Path typo, swallowed by the fallback | Set `strictFonts: true` to get `PdfAssetException` |
 
 ## 🗺️ Roadmap

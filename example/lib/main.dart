@@ -70,9 +70,15 @@ class _DemoHomeState extends State<DemoHome> {
   /// One config per render. In a real app, build it once and keep it — the
   /// font and logo are decoded on the first [PdfConfig.init] and then reused.
   ///
-  /// Cairo covers Arabic, Inter covers Latin. Both are declared as assets in
-  /// this app's `pubspec.yaml` — the package ships no fonts on purpose, so
-  /// you pick the typeface and pay for only the bytes you use.
+  /// IBM Plex Sans Arabic covers Arabic, Inter covers Latin. Both are declared
+  /// as assets in this app's `pubspec.yaml` — the package ships no fonts on
+  /// purpose, so you pick the typeface and pay for only the bytes you use.
+  ///
+  /// The Arabic face is chosen for what it contains, not for how it looks:
+  /// the renderer asks a font for the Arabic Presentation Forms-B codepoints,
+  /// and a family that leaves those to OpenType shaping — as most Google
+  /// Fonts Arabic families do — loses a word-final `ي` after `ر`, `ا`, `د`,
+  /// `و` or `ز`. `المتبقي` came out as `المتبق`.
   PdfConfig get _config => PdfConfig(
     company: demoCompany,
     locale: _arabic ? 'ar' : 'en',
@@ -80,11 +86,11 @@ class _DemoHomeState extends State<DemoHome> {
     theme: _theme,
     fontPath:
         _arabic
-            ? 'assets/fonts/Cairo/Cairo-Regular.ttf'
+            ? 'assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf'
             : 'assets/fonts/Inter/Inter-Regular.ttf',
     boldFontPath:
         _arabic
-            ? 'assets/fonts/Cairo/Cairo-Bold.ttf'
+            ? 'assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf'
             : 'assets/fonts/Inter/Inter-Bold.ttf',
   );
 

@@ -6,7 +6,8 @@ import 'package:save_points_pdf_templates/save_points_pdf_templates.dart';
 
 /// The only Arabic-capable font in the repository. The package deliberately
 /// ships none, so the example app's asset stands in for a caller-supplied TTF.
-const arabicFontPath = 'example/assets/fonts/Cairo/Cairo-Regular.ttf';
+const arabicFontPath =
+    'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf';
 
 /// One text-showing operation recovered from a page's content stream.
 ///

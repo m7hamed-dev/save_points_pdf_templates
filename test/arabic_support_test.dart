@@ -7,9 +7,10 @@ import 'package:save_points_pdf_templates/save_points_pdf_templates.dart';
 
 import 'pdf_test_fixtures.dart';
 
-/// Cairo carries Arabic and Latin; Inter carries Latin only. Both are custom
-/// TTFs, which is exactly the distinction this file is about.
-const arabicFontPath = 'example/assets/fonts/Cairo/Cairo-Regular.ttf';
+/// IBM Plex Sans Arabic carries Arabic and Latin; Inter carries Latin only.
+/// Both are custom TTFs, which is exactly the distinction this file is about.
+const arabicFontPath =
+    'example/assets/fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf';
 const latinFontPath = 'example/assets/fonts/Inter/Inter-Regular.ttf';
 
 pw.Font loadFont(String path) =>

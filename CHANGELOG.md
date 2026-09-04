@@ -87,9 +87,12 @@ design has been rebuilt around type and space instead of boxes and rules.
   positions in the page's content stream — rather than the widget tree, since
   the tree is identical in both directions and it is the renderer that decides
   what ends up on the right.
-- A font without the isolated Arabic presentation forms drops a word-final
-  letter after `ر`, `ا`, `د`, `و` or `ز`. That is a property of the font file,
-  not of the package; see Troubleshooting in the README.
+- The example app now uses IBM Plex Sans Arabic. The renderer asks a font for
+  the legacy Arabic Presentation Forms-B codepoints, and most Google Fonts
+  Arabic families — Cairo and Tajawal among them — leave those shapes to
+  OpenType and never map the block, so a word-final `ي` after `ر`, `ا`, `د`,
+  `و` or `ز` is dropped: `المتبقي` printed as `المتبق`. It is a property of
+  how the font is built, not of the package; see Troubleshooting in the README.
 
 ## 0.2.1
 
