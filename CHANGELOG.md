@@ -49,6 +49,29 @@ design has been rebuilt around type and space instead of boxes and rules.
 - Screenshots — in the README and as pub.dev cards. It is a package about how
   documents look and it had none.
 - `CONTRIBUTING.md`, covering how a rendering package is tested.
+- **Discount and tax as a rate.** `PdfInvoiceItemModel.taxRate` and
+  `discountRate` work the amount out for the line, and
+  `PdfItemizedInvoiceModel.taxRate` sets one rate for the whole document
+  without repeating it. Absolute amounts still work; a rate wins when both are
+  given.
+- **A tax breakdown by rate** — `taxBreakdown`, `PdfTaxBand` and
+  `PdfSections.taxBreakdown`. A GCC tax invoice that mixes rates has to show
+  what was taxed at each; one total headed `Tax` does not. A document charged
+  at a single rate names it on the tax line instead — one or the other, never
+  both.
+- `PdfConfig.currencyDecimals` and `PdfFormatters.decimals`. Two decimals were
+  hard-coded, which is wrong for the Kuwaiti and Bahraini dinar (three) and
+  the yen (none).
+- **`QuotationTemplate`** — priced lines that are offered, not owed: no paid
+  figure, no balance due, and a stamp that says whether the offer is still
+  valid rather than whether it is paid.
+- **`DeliveryNoteTemplate`** — the item table with every trace of money taken
+  out. `ItemizedInvoiceTemplate.showPricing` is what makes that possible, so a
+  price-free document is now a two-line subclass rather than impossible.
+- **`StatementOfAccountTemplate`** — opening balance, movements, a running
+  balance column and what is owed at the end. The balances are derived from
+  the entries rather than supplied alongside them, so the column a reader
+  checks the statement by cannot disagree with the rows above it.
 - `PdfColumnSpec.intrinsic`, which sizes a column to its content instead of a
   flex share.
 - `PdfUi.display`, the type style behind the amount due.

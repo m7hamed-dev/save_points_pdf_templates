@@ -43,6 +43,7 @@ class PdfConfig {
     this.logoPath = '',
     this.company,
     this.currency = 'SAR',
+    this.currencyDecimals = 2,
     this.locale = 'en',
     this.theme = const PdfTheme(),
     this.pageFormat = PdfPageFormat.a4,
@@ -79,6 +80,9 @@ class PdfConfig {
 
   /// Currency appended to every money value.
   final String currency;
+
+  /// Decimal places on money. Three for KWD and BHD, none for JPY.
+  final int currencyDecimals;
 
   /// BCP 47 locale tag. Anything starting with `ar` renders right-to-left.
   final String locale;
@@ -202,6 +206,7 @@ class PdfConfig {
   PdfFormatters get formatters => PdfFormatters(
     locale: canRenderArabic ? locale : 'en',
     currency: currency,
+    decimals: currencyDecimals,
   );
 
   /// Accent color, kept for convenience and backwards compatibility.

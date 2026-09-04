@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:save_points_pdf_templates/pdf/core/widgets/pdf_ui.dart';
+import 'package:save_points_pdf_templates/pdf/models/base/pdf_invoice_item_model.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 
 /// The full-width blocks a business document is made of: the masthead, the
@@ -375,6 +376,84 @@ class PdfSections {
         ui.gapX(),
         panel,
       ],
+    );
+  }
+
+  /// What was taxed at each rate — base, rate, tax — as a tax invoice that
+  /// mixes rates has to show.
+  ///
+  /// Deliberately quiet: it is a legal disclosure, not a summary the reader
+  /// is meant to land on. The amount due keeps that job.
+  pw.Widget taxBreakdown(
+    List<PdfTaxBand> bands, {
+    String label = 'TAX BREAKDOWN',
+    String baseLabel = 'Taxable',
+    String rateLabel = 'Rate',
+    String taxLabel = 'Tax',
+    double width = 250,
+  }) {
+    if (bands.isEmpty) return pw.SizedBox();
+    final theme = ui.theme;
+    return pw.SizedBox(
+      width: width,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          ui.microLabel(label, color: theme.mutedText),
+          pw.SizedBox(height: theme.spacing * 0.5),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                flex: 3,
+                child: ui.caption(baseLabel, color: theme.mutedText),
+              ),
+              pw.Expanded(
+                flex: 2,
+                child: ui.caption(
+                  rateLabel,
+                  color: theme.mutedText,
+                  align: pw.TextAlign.center,
+                ),
+              ),
+              pw.Expanded(
+                flex: 3,
+                child: ui.caption(
+                  taxLabel,
+                  color: theme.mutedText,
+                  align: ui.alignEnd,
+                ),
+              ),
+            ],
+          ),
+          ui.rule(),
+          for (final band in bands)
+            pw.Padding(
+              padding: pw.EdgeInsets.only(top: theme.spacing * 0.35),
+              child: pw.Row(
+                children: [
+                  pw.Expanded(
+                    flex: 3,
+                    child: ui.text(ui.formatters.number(band.taxableAmount)),
+                  ),
+                  pw.Expanded(
+                    flex: 2,
+                    child: ui.text(
+                      ui.formatters.percent(band.rate),
+                      align: pw.TextAlign.center,
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 3,
+                    child: ui.text(
+                      ui.formatters.number(band.tax),
+                      align: ui.alignEnd,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 

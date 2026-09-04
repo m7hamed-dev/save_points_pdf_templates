@@ -61,7 +61,8 @@ final bytes = await PdfGenerator.generate(
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
-| 🧮 **Totals that add up** | Line and document level discount/tax, computed subtotal, paid and balance due — or pass a total to reproduce server-side figures |
+| 🧮 **Totals that add up** | Discount and tax as an amount *or* a rate, per line or per document, with a tax breakdown by rate for a GCC tax invoice |
+| 💰 **Money, properly** | Decimal places follow the currency — three for KWD and BHD, none for JPY — and due dates make a document say `OVERDUE` |
 | 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
 | 🔠 **Your fonts** | No bundled TTFs — point at an asset, hand over a `pw.Font`, and declare fallbacks for missing glyphs |
 | 🖨️ **Preview & share** | A ready-made preview page, plus headless `bytes` / `share` / `print` / `thumbnail` |
@@ -129,9 +130,11 @@ final invoice = PdfSaleInvoiceModel(
   date: DateTime.now(),
   customer: const PdfPartyModel(name: 'Acme Trading Co.'),
   items: const [
-    PdfInvoiceItemModel(title: 'HP ProBook 450', qty: 3, price: 3200, tax: 480),
+    PdfInvoiceItemModel(title: 'HP ProBook 450', qty: 3, price: 3200),
     PdfInvoiceItemModel(title: 'On-site setup', qty: 1.5, price: 400, unit: 'hr'),
   ],
+  taxRate: 15,                       // or `tax:` per line, as an amount
+  dueDate: DateTime.now().add(const Duration(days: 30)),
   paymentMethod: 'Bank transfer',
   paidAmount: 5000,
 );
@@ -156,6 +159,9 @@ Navigator.of(context).push(MaterialPageRoute(
 | `InvoiceTemplate` | `PdfInvoiceModel` | The minimal invoice — number, customer name, lines; signatures off |
 | `ReceiptVoucherTemplate` | `ReceiptVoucherModel` | Prominent amount, dotted fill-in fields, two signature slots |
 | `PaymentVoucherTemplate` | `PaymentVoucherModel` | The same, mirrored — money out rather than in |
+| `QuotationTemplate` | `PdfQuotationModel` | Priced but not owed — valid until a date, signed to accept |
+| `DeliveryNoteTemplate` | `PdfDeliveryNoteModel` | The item table with every price taken out, plus a receipt signature |
+| `StatementOfAccountTemplate` | `PdfStatementModel` | Opening balance, movements, a running balance and what is owed |
 | `ListStringsTemplate` | `PdfListStringsModel` | Free-form table: you supply headers and rows, it supplies the chrome |
 
 <details>

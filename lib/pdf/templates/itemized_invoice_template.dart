@@ -41,6 +41,20 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// expense.
   String get partyLabel => tr('BILL TO', 'فاتورة إلى');
 
+  /// Whether the document deals in money at all.
+  ///
+  /// A delivery note lists what was sent, not what it cost: turning this off
+  /// drops the price, discount, tax and amount columns, the totals panel and
+  /// the paid/unpaid stamp in one move, leaving the table, the parties and
+  /// the signatures.
+  bool get showPricing => true;
+
+  /// Whether to print what has been paid and what is still owed.
+  ///
+  /// Off for a document that is not owed yet — a quotation is an offer, not a
+  /// debt — even when it does show prices.
+  bool get showSettlement => showPricing;
+
   /// The date an overdue document is judged against. Defaults to the issue
   /// date's own clock; override it to render a document as of a fixed day.
   DateTime get asOf => DateTime.now();
@@ -50,6 +64,7 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// An unpaid document whose due date has passed says so — that is the whole
   /// reason a reader looks at the top of the page.
   String? get statusLabel {
+    if (!showSettlement) return null;
     if (data.isFullyPaid) return tr('PAID', 'مدفوعة');
     if (data.isOverdueOn(asOf)) return tr('OVERDUE', 'متأخرة');
     return tr('UNPAID', 'غير مدفوعة');
@@ -83,33 +98,35 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
         align: PdfCellAlign.center,
         intrinsic: true,
       ),
-    PdfColumnSpec(
-      moneyHeader('Unit Price', 'سعر الوحدة'),
-      flex: 1.5,
-      align: PdfCellAlign.end,
-    ),
-    if (data.itemsDiscount > 0)
+    if (showPricing) ...[
       PdfColumnSpec(
-        moneyHeader('Discount', 'الخصم'),
-        flex: 1.3,
+        moneyHeader('Unit Price', 'سعر الوحدة'),
+        flex: 1.5,
         align: PdfCellAlign.end,
       ),
-    if (data.itemsTax > 0)
+      if (data.itemsDiscount > 0)
+        PdfColumnSpec(
+          moneyHeader('Discount', 'الخصم'),
+          flex: 1.3,
+          align: PdfCellAlign.end,
+        ),
+      if (data.itemsTax > 0)
+        PdfColumnSpec(
+          moneyHeader('Tax', 'الضريبة'),
+          flex: 1.3,
+          align: PdfCellAlign.end,
+        ),
       PdfColumnSpec(
-        moneyHeader('Tax', 'الضريبة'),
-        flex: 1.3,
+        moneyHeader('Amount', 'الإجمالي'),
+        flex: 1.6,
         align: PdfCellAlign.end,
       ),
-    PdfColumnSpec(
-      moneyHeader('Amount', 'الإجمالي'),
-      flex: 1.6,
-      align: PdfCellAlign.end,
-    ),
+    ],
   ];
 
   /// One row of already-formatted cells per line item.
   List<List<String>> get rows => [
-    for (final item in data.items)
+    for (final item in data.chargedItems)
       [
         [
           item.title,
@@ -118,10 +135,12 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
         ].join(' '),
         format.quantity(item.qty),
         if (hasUnits) item.unit ?? '',
-        format.number(item.price),
-        if (data.itemsDiscount > 0) format.number(item.discount),
-        if (data.itemsTax > 0) format.number(item.tax),
-        format.number(item.total),
+        if (showPricing) ...[
+          format.number(item.price),
+          if (data.itemsDiscount > 0) format.number(item.discount),
+          if (data.itemsTax > 0) format.number(item.tax),
+          format.number(item.total),
+        ],
       ],
   ];
 
@@ -143,10 +162,11 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   Map<String, String> get settlementLines => {
     if (data.paymentMethod.isNotEmpty)
       tr('Method', 'الطريقة'): data.paymentMethod,
-    tr('Status', 'الحالة'):
-        data.isFullyPaid
-            ? tr('Settled in full', 'مسددة بالكامل')
-            : tr('Partially settled', 'مسددة جزئياً'),
+    if (showSettlement)
+      tr('Status', 'الحالة'):
+          data.isFullyPaid
+              ? tr('Settled in full', 'مسددة بالكامل')
+              : tr('Partially settled', 'مسددة جزئياً'),
   };
 
   /// Label above [settlementLines].
@@ -157,8 +177,21 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   Map<String, double> get totalLines => {
     tr('Subtotal', 'الإجمالي الفرعي'): data.subtotal,
     if (data.totalDiscount > 0) tr('Discount', 'الخصم'): -data.totalDiscount,
-    if (data.totalTax > 0) tr('Tax', 'الضريبة'): data.totalTax,
+    if (data.totalTax > 0) taxLineLabel: data.totalTax,
   };
+
+  /// `Tax (15%)` when one rate covers the document, plain `Tax` when the
+  /// breakdown below is going to spell the rates out anyway.
+  ///
+  /// One or the other, never both: naming the rate here *and* listing it under
+  /// the totals says the same thing twice.
+  String get taxLineLabel {
+    final label = tr('Tax', 'الضريبة');
+    if (showTaxBreakdown) return label;
+    final charged = data.taxBreakdown.where((band) => band.rate > 0).toList();
+    if (charged.length != 1) return label;
+    return '$label (${format.percent(charged.first.rate)})';
+  }
 
   @override
   pw.Widget? footer(pw.Context context) =>
@@ -186,8 +219,11 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
     ui.gap(1.5),
     // Its own block so a long document breaks across pages inside the table.
     buildItemsTable(),
-    ui.gap(1.4),
-    buildTotals(),
+    if (showPricing) ...[
+      ui.gap(1.4),
+      buildTotals(),
+      if (showTaxBreakdown) ...[ui.gap(1.4), buildTaxBreakdown()],
+    ],
     if (data.notes?.isNotEmpty ?? false) ...[
       ui.gap(1.5),
       sections.notes(data.notes!, label: tr('NOTES', 'ملاحظات')),
@@ -221,14 +257,31 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
         emptyPlaceholder: tr('No items', 'لا توجد عناصر'),
       ).build();
 
+  /// Whether to spell out what was taxed at each rate. Shown only when the
+  /// document actually mixes rates; one rate is already named on the tax line.
+  bool get showTaxBreakdown => data.hasMixedTaxRates;
+
+  pw.Widget buildTaxBreakdown() => pw.Row(
+    children: [
+      pw.Expanded(child: pw.SizedBox()),
+      sections.taxBreakdown(
+        data.taxBreakdown,
+        label: tr('TAX BREAKDOWN', 'تفصيل الضريبة'),
+        baseLabel: tr('Taxable', 'الوعاء'),
+        rateLabel: tr('Rate', 'النسبة'),
+        taxLabel: tr('Tax', 'الضريبة'),
+      ),
+    ],
+  );
+
   pw.Widget buildTotals() => sections.totalsPanel(
     leading: sections.infoBlock(settlementLabel, settlementLines),
     lines: totalLines,
     totalLabel: tr('TOTAL', 'الإجمالي'),
     totalValue: data.total,
     paidLabel: tr('Paid', 'المدفوع'),
-    paidValue: data.paid,
+    paidValue: showSettlement ? data.paid : null,
     dueLabel: tr('Balance Due', 'المتبقي'),
-    dueValue: data.isFullyPaid ? null : data.due,
+    dueValue: showSettlement && !data.isFullyPaid ? data.due : null,
   );
 }

@@ -19,6 +19,7 @@ class PdfInvoiceModel extends PdfItemizedInvoiceModel {
     super.title,
     super.discount,
     super.tax,
+    super.taxRate,
     super.paymentMethod,
     super.dueDate,
     super.total,

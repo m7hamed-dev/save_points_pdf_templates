@@ -6,7 +6,11 @@ import 'package:intl/intl.dart';
 /// double directly — everything goes through here so a document rendered in
 /// Arabic and the same document rendered in English stay consistent.
 class PdfFormatters {
-  const PdfFormatters({this.locale = 'en', this.currency = 'SAR'});
+  const PdfFormatters({
+    this.locale = 'en',
+    this.currency = 'SAR',
+    this.decimals = 2,
+  });
 
   /// BCP 47 locale tag, e.g. `en`, `ar`, `ar_SA`.
   final String locale;
@@ -14,15 +18,24 @@ class PdfFormatters {
   /// Currency symbol or ISO code appended to money values.
   final String currency;
 
+  /// Decimal places on money. Two suits most currencies; the Kuwaiti and
+  /// Bahraini dinar take three and the yen takes none, and printing the wrong
+  /// count on a financial document is not a rounding detail.
+  final int decimals;
+
   bool get isRtl => locale.toLowerCase().startsWith('ar');
 
   /// `1,234.50 SAR`
   String money(double value) => '${number(value)} $currency';
 
-  /// `1,234.50` — always two decimals, grouped thousands.
+  /// `1,234.50` — grouped thousands at the currency's [decimals].
+  ///
+  /// Digits are always Latin, whatever the locale: an Arabic document sits
+  /// beside Latin document numbers and prices, and mixing digit systems on
+  /// one page reads as a bug rather than as a translation.
   String number(double value) => NumberFormat.decimalPatternDigits(
     locale: 'en',
-    decimalDigits: 2,
+    decimalDigits: decimals,
   ).format(value);
 
   /// `1,234` — no decimals when the value is whole, two when it is not.

@@ -65,6 +65,7 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
     this.items = const [],
     this.discount = 0.0,
     this.tax = 0.0,
+    this.taxRate,
     this.paymentMethod = '',
     this.dueDate,
     double? total,
@@ -83,6 +84,14 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
   /// Document-level tax, on top of any per-line tax.
   final double tax;
 
+  /// The rate every line is charged at, for a document whose lines do not
+  /// each carry their own [PdfInvoiceItemModel.taxRate].
+  ///
+  /// A convenience for the common case — one VAT rate across the whole
+  /// invoice — so the caller does not repeat it on every line. A line's own
+  /// rate still wins.
+  final double? taxRate;
+
   final String paymentMethod;
 
   /// When payment is due. Printed beside the issue date and drives
@@ -93,14 +102,56 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
   final double? _paidAmount;
 
   /// Sum of `qty * price` across [items], before any discount or tax.
-  double get subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
+  double get subtotal =>
+      chargedItems.fold(0.0, (sum, item) => sum + item.subtotal);
 
   /// Discount recorded on the lines themselves.
   double get itemsDiscount =>
-      items.fold(0.0, (sum, item) => sum + item.discount);
+      chargedItems.fold(0.0, (sum, item) => sum + item.discount);
+
+  /// The lines as they will be charged, with [taxRate] filled in on any line
+  /// that does not set its own.
+  List<PdfInvoiceItemModel> get chargedItems {
+    final rate = taxRate;
+    if (rate == null) return items;
+    return [
+      for (final item in items)
+        item.taxRate == null ? item.copyWith(taxRate: rate) : item,
+    ];
+  }
 
   /// Tax recorded on the lines themselves.
-  double get itemsTax => items.fold(0.0, (sum, item) => sum + item.tax);
+  double get itemsTax => chargedItems.fold(0.0, (sum, item) => sum + item.tax);
+
+  /// Tax grouped by the rate charged, lowest rate first.
+  ///
+  /// A tax invoice that mixes rates has to show what was taxed at each. Lines
+  /// that carry no tax at all are still listed, at 0% — a zero-rated line is
+  /// a statement, not an omission.
+  List<PdfTaxBand> get taxBreakdown {
+    final bands = <double, ({double base, double tax})>{};
+    for (final item in chargedItems) {
+      final rate = item.effectiveTaxRate;
+      final current = bands[rate] ?? (base: 0.0, tax: 0.0);
+      bands[rate] = (
+        base: current.base + item.taxableAmount,
+        tax: current.tax + item.tax,
+      );
+    }
+    final rates = bands.keys.toList()..sort();
+    return [
+      for (final rate in rates)
+        PdfTaxBand(
+          rate: rate,
+          taxableAmount: bands[rate]!.base,
+          tax: bands[rate]!.tax,
+        ),
+    ];
+  }
+
+  /// True when the lines are not all charged at the same rate, which is when
+  /// a breakdown earns its place on the page.
+  bool get hasMixedTaxRates => taxBreakdown.length > 1;
 
   /// Line discounts plus the document-level [discount].
   double get totalDiscount => discount + itemsDiscount;

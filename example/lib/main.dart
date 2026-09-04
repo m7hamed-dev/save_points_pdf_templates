@@ -226,6 +226,95 @@ class _DemoHomeState extends State<DemoHome> {
                 ),
           ),
           _DocumentTile(
+            title: 'Delivery note',
+            subtitle: 'The item table with every price taken out',
+            onTap:
+                () => _preview(
+                  DeliveryNoteTemplate(
+                    data: PdfDeliveryNoteModel(
+                      id: 'DN-2026-0088',
+                      date: DateTime.now(),
+                      customer: demoCustomer,
+                      deliveryAddress: 'Warehouse 4, Industrial City, Jeddah',
+                      carrier: 'Naqel — plate 4471 ABC',
+                      items: demoItems,
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Quotation',
+            subtitle: 'Priced but not owed — valid until a date',
+            onTap:
+                () => _preview(
+                  QuotationTemplate(
+                    data: PdfQuotationModel(
+                      id: 'QT-2026-0007',
+                      date: DateTime.now(),
+                      validUntil: DateTime.now().add(const Duration(days: 30)),
+                      customer: demoCustomer,
+                      items: const [
+                        PdfInvoiceItemModel(
+                          title: 'HP ProBook 450 G10',
+                          qty: 3,
+                          price: 3200,
+                          unit: 'pcs',
+                          taxRate: 15,
+                        ),
+                        PdfInvoiceItemModel(
+                          title: 'Training (exempt)',
+                          qty: 1,
+                          price: 2000,
+                          taxRate: 0,
+                        ),
+                      ],
+                      terms:
+                          'Delivery within 10 working days of a signed '
+                          'acceptance.',
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Statement of account',
+            subtitle: 'Opening balance, movements, running balance',
+            onTap:
+                () => _preview(
+                  StatementOfAccountTemplate(
+                    data: PdfStatementModel(
+                      id: 'SOA-2026-09',
+                      customer: demoCustomer,
+                      periodStart: DateTime(2026, 9),
+                      periodEnd: DateTime(2026, 9, 30),
+                      openingBalance: 4200,
+                      currencyNote: 'All amounts in SAR.',
+                      entries: [
+                        PdfStatementEntry(
+                          date: DateTime(2026, 9, 3),
+                          description: 'Sales invoice',
+                          reference: 'INV-2026-0042',
+                          debit: 29240,
+                        ),
+                        PdfStatementEntry(
+                          date: DateTime(2026, 9, 12),
+                          description: 'Credit note',
+                          reference: 'CN-2026-0003',
+                          credit: 1500,
+                        ),
+                        PdfStatementEntry(
+                          date: DateTime(2026, 9, 20),
+                          description: 'Payment received',
+                          credit: 12000,
+                        ),
+                      ],
+                    ),
+                    pdfConfig: _config,
+                  ),
+                ),
+          ),
+          _DocumentTile(
             title: 'Tabular report',
             subtitle: 'Raw rows, paginated over multiple pages',
             onTap:
