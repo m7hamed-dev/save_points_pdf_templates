@@ -20,6 +20,7 @@ class PdfExpensesInvoiceModel extends PdfItemizedInvoiceModel {
     super.discount,
     super.tax,
     super.paymentMethod,
+    super.dueDate,
     super.total,
     super.paidAmount,
     this.category,

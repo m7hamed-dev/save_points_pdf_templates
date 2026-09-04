@@ -26,6 +26,15 @@ final bytes = await PdfGenerator.generate(
 );
 ```
 
+<div align="center">
+
+<img src="doc/screenshots/invoice-en.png" width="46%" alt="A sales invoice in English" />
+<img src="doc/screenshots/invoice-ar.png" width="46%" alt="The same invoice in Arabic, mirrored right to left" />
+
+<sub>The same document, the same code, two directions.</sub>
+
+</div>
+
 ## Table of Contents
 
 - [Features](#-features)
@@ -48,7 +57,7 @@ final bytes = await PdfGenerator.generate(
 
 | Feature | Description |
 |---------|-------------|
-| 🧾 **Typed documents** | Sales invoices, expense records, receipt vouchers, minimal invoices and free-form tabular reports |
+| 🧾 **Typed documents** | Sales invoices, expense records, receipt and payment vouchers, minimal invoices and free-form tabular reports |
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
@@ -145,7 +154,8 @@ Navigator.of(context).push(MaterialPageRoute(
 | `SaleInvoiceTemplate` | `PdfSaleInvoiceModel` | Masthead, customer + meta cards, item table, totals panel, notes, signatures |
 | `ExpensesInvoiceTemplate` | `PdfExpensesInvoiceModel` | Same, with a payee card and an expense category |
 | `InvoiceTemplate` | `PdfInvoiceModel` | The minimal invoice — number, customer name, lines; signatures off |
-| `ReceiptVoucherTemplate` | `ReceiptVoucherModel` | Accent amount block, dotted fill-in fields, two signature slots |
+| `ReceiptVoucherTemplate` | `ReceiptVoucherModel` | Prominent amount, dotted fill-in fields, two signature slots |
+| `PaymentVoucherTemplate` | `PaymentVoucherModel` | The same, mirrored — money out rather than in |
 | `ListStringsTemplate` | `PdfListStringsModel` | Free-form table: you supply headers and rows, it supplies the chrome |
 
 <details>
@@ -258,6 +268,14 @@ The table header follows `headerStyle`:
 Type sizes carry the hierarchy, so the amount due needs no box behind it:
 `titleSize` for the document type, `displaySize` for the total, then
 `headingSize` / `bodySize` / `captionSize`.
+
+<div align="center">
+
+<img src="doc/screenshots/themes.png" width="100%" alt="The modern, classic and minimal presets side by side" />
+
+<sub><code>modern</code> · <code>classic</code> · <code>minimal</code></sub>
+
+</div>
 
 Tweak a preset instead of writing one from scratch:
 
@@ -419,7 +437,8 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 Issues and pull requests are welcome at
 [the issue tracker](https://github.com/m7hamed-dev/save_points_pdf_templates/issues).
-Before opening a PR, run:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how this package is tested — the
+output is a PDF, so "it compiles" proves very little. Before opening a PR:
 
 ```bash
 dart format . && flutter analyze --fatal-infos && flutter test

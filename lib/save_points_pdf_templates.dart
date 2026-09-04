@@ -39,6 +39,7 @@ export 'pdf/models/pdf_invoice_types.dart';
 export 'pdf/models/pdf_list_string_model.dart';
 export 'pdf/models/pdf_receipt_voucher_model.dart';
 export 'pdf/models/pdf_sale_invoice_model.dart';
+export 'pdf/models/pdf_voucher_model.dart';
 
 // ── Configuration ─────────────────────────────────────────────────────────
 export 'pdf/pdf_config/pdf_cairo_config.dart';
@@ -55,5 +56,7 @@ export 'pdf/templates/expenses_invoice_template.dart';
 export 'pdf/templates/invoice_template.dart';
 export 'pdf/templates/itemized_invoice_template.dart';
 export 'pdf/templates/list_strings_template.dart';
+export 'pdf/templates/payment_voucher_template.dart';
 export 'pdf/templates/receipt_voucher_template.dart';
 export 'pdf/templates/sale_invoice_template.dart';
+export 'pdf/templates/voucher_template.dart';

@@ -8,6 +8,18 @@ homepage: https://github.com/m7hamed-dev/save_points_pdf_templates
 repository: https://github.com/m7hamed-dev/save_points_pdf_templates
 issue_tracker: https://github.com/m7hamed-dev/save_points_pdf_templates/issues
 
+screenshots:
+  - description: A sales invoice in English, partially paid.
+    path: doc/screenshots/invoice-en.png
+  - description: The same invoice in Arabic, mirrored right to left.
+    path: doc/screenshots/invoice-ar.png
+  - description: A receipt voucher with dotted fill-in lines and signatures.
+    path: doc/screenshots/voucher-ar.png
+  - description: The classic preset — a full grid and a filled table header.
+    path: doc/screenshots/theme-classic.png
+  - description: The minimal preset — no fills and no rules between rows.
+    path: doc/screenshots/theme-minimal.png
+
 topics:
   - pdf
   - invoice

@@ -473,7 +473,9 @@ class PdfSections {
     String? pageLabel,
   }) {
     final page =
-        pageLabel ?? 'Page ${context.pageNumber} / ${context.pagesCount}';
+        pageLabel ??
+        '${ui.bilingual('Page', 'صفحة')} '
+            '${context.pageNumber} / ${context.pagesCount}';
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [

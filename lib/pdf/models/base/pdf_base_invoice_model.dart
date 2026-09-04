@@ -66,6 +66,7 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
     this.discount = 0.0,
     this.tax = 0.0,
     this.paymentMethod = '',
+    this.dueDate,
     double? total,
     double? paidAmount,
   }) : _total = total,
@@ -83,6 +84,10 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
   final double tax;
 
   final String paymentMethod;
+
+  /// When payment is due. Printed beside the issue date and drives
+  /// [isOverdueOn].
+  final DateTime? dueDate;
 
   final double? _total;
   final double? _paidAmount;
@@ -118,4 +123,17 @@ abstract class PdfItemizedInvoiceModel extends PdfBaseInvoiceModel {
 
   /// True when an explicit total was provided instead of a computed one.
   bool get hasExplicitTotal => _total != null;
+
+  /// True when money is still owed and [dueDate] has passed.
+  ///
+  /// Takes the date to compare against rather than reading the clock, so a
+  /// document renders the same whenever it is printed and a test can pin it.
+  bool isOverdueOn(DateTime date) {
+    final due = dueDate;
+    if (due == null || isFullyPaid) return false;
+    return date.isAfter(due);
+  }
+
+  /// [isOverdueOn] against the current date.
+  bool get isOverdue => isOverdueOn(DateTime.now());
 }

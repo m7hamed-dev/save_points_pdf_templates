@@ -1,8 +1,37 @@
 /// Bilingual document labels.
 ///
-/// Every template prints [english] and [arabic] side by side, so a document
-/// is readable by an Arabic customer and an English-speaking auditor without
-/// generating it twice. Use [label] to pick one for a given direction.
+/// Every template leads with the label in the document's own language and
+/// prints the other beneath it, so a document is readable by an Arabic
+/// customer and an English-speaking auditor without generating it twice. Use
+/// [label] to pick one for a given direction.
+///
+/// **A type is a label, not a layout.** Four of these have a template built
+/// around them:
+///
+/// | Type | Template |
+/// |---|---|
+/// | [salesInvoice] | `SaleInvoiceTemplate` |
+/// | [expensesInvoice] | `ExpensesInvoiceTemplate` |
+/// | [receiptVoucher] | `ReceiptVoucherTemplate` |
+/// | [paymentVoucher] | `PaymentVoucherTemplate` |
+///
+/// The rest are labels you can put on a layout that already fits. Anything
+/// made of priced lines — a quotation, a purchase order, a tax invoice, a
+/// credit note — renders through the itemized layout by passing the type:
+///
+/// ```dart
+/// PdfSaleInvoiceModel(
+///   id: 'QT-2026-0007',
+///   type: PdfInvoiceType.quotation,   // prints `Quotation` / `عرض سعر`
+///   date: DateTime.now(),
+///   items: lines,
+/// );
+/// ```
+///
+/// Anything that is a table of your own rows — a statement of account, an
+/// inventory count sheet — goes through `ListStringsTemplate` the same way.
+/// A document that needs a genuinely different layout, such as a delivery
+/// note with no prices at all, needs a template of its own.
 enum PdfInvoiceType {
   // ── Invoices ────────────────────────────────────────────────────────────
   salesInvoice(english: 'Sales Invoice', arabic: 'فاتورة مبيعات'),

@@ -100,6 +100,7 @@ class _DemoHomeState extends State<DemoHome> {
     customer: demoCustomer,
     items: demoItems,
     paymentMethod: 'Bank transfer',
+    dueDate: DateTime.now().add(const Duration(days: 30)),
     reference: 'PO-8891',
     notes: 'Payment due within 30 days of the invoice date.',
     total: 30000,
@@ -184,6 +185,27 @@ class _DemoHomeState extends State<DemoHome> {
                     ),
                     pdfConfig: _config,
                     qrCode: 'RV-2026-0031',
+                  ),
+                ),
+          ),
+          _DocumentTile(
+            title: 'Payment voucher',
+            subtitle: 'The receipt voucher mirrored — money out',
+            onTap:
+                () => _preview(
+                  PaymentVoucherTemplate(
+                    data: PaymentVoucherModel(
+                      id: 'PV-2026-0014',
+                      date: DateTime.now(),
+                      payeeName: 'Gulf Office Supplies',
+                      amount: 3200,
+                      amountInWords: 'Three thousand two hundred Saudi Riyals',
+                      paymentMethod: 'Cheque #4471',
+                      statement: 'Office furniture for the Jeddah branch',
+                      disburserName: 'Mohamed Syed',
+                    ),
+                    pdfConfig: _config,
+                    qrCode: 'PV-2026-0014',
                   ),
                 ),
           ),

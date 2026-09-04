@@ -41,9 +41,19 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// expense.
   String get partyLabel => tr('BILL TO', 'فاتورة إلى');
 
+  /// The date an overdue document is judged against. Defaults to the issue
+  /// date's own clock; override it to render a document as of a fixed day.
+  DateTime get asOf => DateTime.now();
+
   /// Status pill shown next to the document number.
-  String? get statusLabel =>
-      data.isFullyPaid ? tr('PAID', 'مدفوعة') : tr('UNPAID', 'غير مدفوعة');
+  ///
+  /// An unpaid document whose due date has passed says so — that is the whole
+  /// reason a reader looks at the top of the page.
+  String? get statusLabel {
+    if (data.isFullyPaid) return tr('PAID', 'مدفوعة');
+    if (data.isOverdueOn(asOf)) return tr('OVERDUE', 'متأخرة');
+    return tr('UNPAID', 'غير مدفوعة');
+  }
 
   PdfColor? get statusColor =>
       data.isFullyPaid ? PdfColors.green700 : PdfColors.red700;
@@ -118,6 +128,8 @@ abstract class ItemizedInvoiceTemplate<T extends PdfItemizedInvoiceModel>
   /// Key/value pairs in the meta card next to the party.
   Map<String, String> get metaFields => {
     tr('Date', 'التاريخ'): format.longDate(data.date),
+    if (data.dueDate != null)
+      tr('Due', 'الاستحقاق'): format.longDate(data.dueDate),
     if (data.reference?.isNotEmpty ?? false)
       tr('Reference', 'المرجع'): data.reference!,
     if (data.paymentMethod.isNotEmpty)

@@ -38,6 +38,17 @@ design has been rebuilt around type and space instead of boxes and rules.
 - `BaseTemplate.fileName`, which decides what a document is saved or shared
   as. The preview page and the headless entry points now both ask it, instead
   of each writing the rule out for itself.
+- **`PaymentVoucherTemplate` and `PaymentVoucherModel`.** `PdfInvoiceType` has
+  offered `paymentVoucher` since the first release with only the receipt side
+  built. Both now share `VoucherTemplate` and `PdfVoucherModel` and differ
+  only in what the two parties are called, so a book of receipts and a book of
+  payments look like one set.
+- `dueDate` on itemized documents, printed beside the issue date. An unpaid
+  document past its due date says `OVERDUE` rather than `UNPAID`; judge it
+  against a fixed day with `isOverdueOn` when you need a stable render.
+- Screenshots — in the README and as pub.dev cards. It is a package about how
+  documents look and it had none.
+- `CONTRIBUTING.md`, covering how a rendering package is tested.
 - `PdfColumnSpec.intrinsic`, which sizes a column to its content instead of a
   flex share.
 - `PdfUi.display`, the type style behind the amount due.
@@ -83,6 +94,8 @@ design has been rebuilt around type and space instead of boxes and rules.
   file was called `document.pdf`. `documentName` falls back to the model's
   label and number.
 - A long document type no longer pushes the issuer block out of the masthead.
+- The page footer follows the document's language. `Page 1 / 2` was hard-coded
+  in English and sat under every Arabic document.
 - A line break inside a value survives `PdfUi.bidiText`. Runs are trimmed
   before layout, so a mixed-script value lost its breaks and reflowed into one
   line while a single-script one kept them — an item description sat under its
@@ -98,6 +111,11 @@ design has been rebuilt around type and space instead of boxes and rules.
   `repeat` already does on every page.
 
 ### Notes
+
+- `PdfInvoiceType` documents which of its types have a template built around
+  them and which are labels to put on a layout that already fits. Four have
+  their own; a quotation or a credit note goes through the itemized layout by
+  passing the type, and a statement of account through `ListStringsTemplate`.
 
 - `PdfUi`, `PdfSections` and `PdfPreviewPage` are covered by tests for the
   first time. Several primitives are used by no template in the package —
