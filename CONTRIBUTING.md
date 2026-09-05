@@ -60,6 +60,11 @@ clock with no way to override it, so no two renders are byte-equal. Only the
 page content is, and there is a test asserting exactly that, because every
 golden rests on it.
 
+**Keep the README honest.** `test/readme_examples_test.dart` is a copy of
+every code block in README.md, compiled and run. A README is the package's
+front door and its examples rot quietly — a renamed getter leaves them wrong
+with nothing to say so. Change a block there, change it here.
+
 ## Fonts
 
 The package ships none on purpose. Tests that need Arabic load the example

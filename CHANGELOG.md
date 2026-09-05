@@ -192,6 +192,9 @@ design has been rebuilt around type and space instead of boxes and rules.
 
 ### Notes
 
+- The README's code blocks are compiled and run by
+  `test/readme_examples_test.dart`. Documentation rots quietly; the analyzer
+  now reads it too.
 - Four canonical documents are now held by golden tests — an invoice in each
   direction, a voucher and a till receipt. The rest of the suite asserts facts
   somebody thought to assert; nothing in it noticed a margin moving by a

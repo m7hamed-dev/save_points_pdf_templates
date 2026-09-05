@@ -2,7 +2,7 @@
 
 # Save Points PDF Templates
 
-### Printable business documents for Flutter — invoices, expense records, vouchers and reports — with first-class Arabic/RTL rendering
+### Thirteen printable business documents for Flutter — invoices, quotations, vouchers, delivery notes, statements, payslips, till receipts — with first-class Arabic/RTL rendering
 
 [![Pub Version](https://img.shields.io/pub/v/save_points_pdf_templates?style=flat-square&logo=dart&color=0175C2)](https://pub.dev/packages/save_points_pdf_templates)
 [![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.29-blue?style=flat-square&logo=flutter)](https://flutter.dev)
@@ -17,8 +17,8 @@
 
 Hand it a typed model, get a laid-out PDF. The package owns the parts that are
 tedious to get right — page breaks inside long tables, repeating table headers,
-right-to-left mirroring, mixed Arabic/Latin text, money and date formatting —
-so your code only describes the document.
+right-to-left mirroring, mixed Arabic/Latin text, tax broken down by rate,
+amounts spelled out in words — so your code only describes the document.
 
 ```dart
 final bytes = await PdfGenerator.generate(
@@ -63,14 +63,14 @@ final bytes = await PdfGenerator.generate(
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 🗣️ **Any language** | Every word the package prints is a named getter on `PdfLabels` — a third language is a subclass, not a fork of every template |
 | ©️ **Copy marks** | `DRAFT`, `COPY`, `VOID` set diagonally behind the page, the one thing that survives a photocopier |
-| 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
+| 📄 **Real pagination** | Long tables break at row boundaries with the header repeated, and can close each page with a carried-forward total |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
 | 🧮 **Totals that add up** | Discount and tax as an amount *or* a rate, per line or per document, with a tax breakdown by rate for a GCC tax invoice |
 | 🖊️ **Amounts in words** | `Twelve thousand five hundred Saudi Riyals only` / `اثنا عشر ألفاً وخمسمائة ريال سعودي فقط لا غير`, with the gender agreement Arabic needs |
 | 💰 **Money, properly** | Decimal places follow the currency — three for KWD and BHD, none for JPY — and due dates make a document say `OVERDUE` |
 | 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
 | 🔠 **Your fonts** | No bundled TTFs — point at an asset, hand over a `pw.Font`, and declare fallbacks for missing glyphs |
-| 🖨️ **Preview & share** | A ready-made preview page, plus headless `bytes` / `share` / `print` / `thumbnail` |
+| 🖨️ **Preview & share** | A ready-made preview page, plus headless `bytes` / `share` / `printDocument` / `thumbnail` |
 | 🧩 **Composable** | `PdfUi` primitives and `PdfSections` blocks are public — build your own template from the same parts |
 
 ## 📦 Installation
@@ -229,7 +229,11 @@ ReceiptVoucherTemplate(
 | `logoSize` | Edge length of the logo box (default: `46.0`) |
 | `company` | `PdfPartyModel` printed as the issuer |
 | `currency` | Appended to money values (default: `'SAR'`) |
+| `currencyDecimals` | Decimal places on money — three for KWD and BHD, none for JPY (default: `2`) |
+| `currencyWords` | How the currency is *said*, for amounts in words (default: the riyal, in the document's language) |
+| `amountInWords` | The speller behind `spellAmount` (default: English or Arabic by locale) |
 | `locale` | BCP 47 tag; anything starting with `ar` renders right-to-left (default: `'en'`) |
+| `labels` | `PdfLabels` — every word the package prints (default: English, or Arabic in an RTL document) |
 | `theme` | `PdfTheme` design tokens (default: `PdfTheme()`) |
 | `pageFormat` | Default page size (default: `PdfPageFormat.a4`) |
 | `strictFonts` | Throw `PdfAssetException` on a missing asset instead of falling back (default: `false`) |
@@ -243,16 +247,19 @@ ReceiptVoucherTemplate(
 
 ```dart
 final config = PdfConfig(
-  font: await PdfGoogleFonts.cairoRegular(),
-  boldFont: await PdfGoogleFonts.cairoBold(),
+  font: await PdfGoogleFonts.notoNaskhArabicRegular(),
+  boldFont: await PdfGoogleFonts.notoNaskhArabicBold(),
   locale: 'ar',
 );
 ```
 
+Everything else the config loads — the logo, the bold face, the fallbacks —
+still loads around a font handed over this way.
+
 `CairoPdfFontConfig` is a thin preset over the same class: Arabic locale,
-`SAR`, and Cairo asset paths your app declares. Point `fontPath` at a family
-that ships the Presentation Forms-B block before shipping Arabic documents —
-see the note above.
+`SAR`, and Cairo asset paths your app declares. Point its `fontPath` somewhere
+else before shipping Arabic documents: Cairo is one of the families that drops
+a word-final `ي`, for the reason in [Troubleshooting](#-troubleshooting).
 
 </details>
 
@@ -264,6 +271,7 @@ Every color, type size and spacing value lives on `PdfTheme`.
 const PdfTheme.modern();     // wide margins, one accent keyline — the default
 const PdfTheme.classic();    // full grid, filled header, square corners
 const PdfTheme.minimal();    // no fills, no row rules, the widest margins
+const PdfTheme.thermal();    // 80mm roll: small type, hairline margins
 const PdfTheme.modern(accent: PdfColor.fromInt(0xFF00695C));
 ```
 
@@ -338,9 +346,11 @@ template; it takes exactly two languages, which is what `PdfLabels` replaced.
 ## 🌍 Arabic & RTL
 
 Set `locale: 'ar'` and the whole document mirrors: masthead, table columns,
-alignment and the totals panel. Labels switch language through
-`BaseTemplate.tr`, and the Arabic sub-title is dropped automatically when the
-configured font cannot draw Arabic.
+alignment and the totals panel. The words come from
+[`PdfLabels`](#️-labels--languages), which switches to Arabic on its own — but
+only when the font can actually draw it. A face with no Arabic glyphs falls
+the whole document back to English rather than printing rows of blank boxes,
+and the layout still mirrors.
 
 > [!WARNING]
 > The renderer reverses whichever script run does not match the paragraph
@@ -405,23 +415,40 @@ Subclass `BaseTemplate<T>` for a new document, or `ItemizedInvoiceTemplate<T>`
 to reuse the invoice layout and change only what differs.
 
 ```dart
-class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> {
-  DeliveryNoteTemplate({required super.data, required super.pdfConfig});
+class GoodsReceiptTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> {
+  GoodsReceiptTemplate({required super.data, required super.pdfConfig});
+
+  // What is received is counted, not priced: this drops the price, discount,
+  // tax and amount columns, the totals panel and the paid/unpaid stamp.
+  @override
+  bool get showPricing => false;
 
   @override
-  String get partyLabel => tr('DELIVER TO', 'تسليم إلى');
+  String get partyLabel => labels.deliverTo;
 
   @override
   List<PdfColumnSpec> get columns => [
-    PdfColumnSpec(tr('Item', 'الصنف'), flex: 4),
-    PdfColumnSpec(tr('Qty', 'الكمية'), align: PdfCellAlign.center),
+    PdfColumnSpec(labels.description, flex: 4),
+    PdfColumnSpec(labels.quantity, align: PdfCellAlign.center),
   ];
 
+  // Anything a reader must see before signing goes here, between the notes
+  // and the signatures.
   @override
-  List<List<String>> get rows =>
-      [for (final item in data.items) [item.title, format.quantity(item.qty)]];
+  List<pw.Widget> extraBlocks(pw.Context context) => [
+    ui.gap(1.5),
+    sections.notes('Checked against the packing list.', label: 'CONDITION'),
+  ];
+
+  // A word set diagonally behind every page. Empty by default.
+  @override
+  String get watermark => labels.copy;
 }
 ```
+
+Reach for `tr(english, arabic)` only for a label of your own that `PdfLabels`
+does not name. Anything the package itself says belongs in a `PdfLabels`
+override, where a third language can reach it.
 
 > [!IMPORTANT]
 > `body` returns a **list** of blocks, not one widget. A page can only break
@@ -432,19 +459,25 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 <details>
 <summary><b>The building blocks</b></summary>
 
-`ui` (`PdfUi`) — `text`, `bidiText`, `microLabel`, `caption`, `heading`,
-`title`, `money`, `pair`, `card`, `accentBar`, `badge`, `stamp`, `stampArea`,
-`keyline`, `rule`, `gap`, `inlineField`, `dottedField`, `qr`, `barcode`,
+`ui` (`PdfUi`) — text: `text`, `bidiText`, `microLabel`, `caption`, `heading`,
+`title`, `display`, `money`, `pair`. Containers and marks: `card`, `accentBar`,
+`badge`, `outlinedBadge`, `stamp`, `stampArea`, `watermark`. Rules and space:
+`keyline`, `rule`, `accentRule`, `gap`, `gapX`. Fields: `stackedField`,
+`inlineField`, `inlineWidgetField`, `dottedField`. Media: `qr`, `barcode`,
 `logo`.
 
 `sections` (`PdfSections`) — `documentHeader`, `partyAndMeta`, `partyCard`,
-`metaCard`, `totalsPanel`, `totalsPanelText`, `infoBlock`, `notes`,
-`signatures`, `pageFooter`.
+`metaCard`, `totalsPanel`, `totalsPanelText`, `taxBreakdown`, `infoBlock`,
+`notes`, `signatures`, `pageFooter`.
 
-`PdfDataTable` — the paginating table, built from `PdfColumnSpec`s.
+`PdfDataTable` — the paginating table, built from `PdfColumnSpec`s. A column
+takes a `flex`, a `fixedWidth`, or `intrinsic: true` to size itself to its
+content — which is what an Arabic header needs, being one unbreakable word.
+
+`labels` (`PdfLabels`) — every word the package prints.
 
 `format` (`PdfFormatters`) — `money`, `number`, `quantity`, `percent`, `date`,
-`dateTime`, `longDate`.
+`dateTime`, `longDate`. Amounts in words come from `pdfConfig.spellAmount`.
 
 </details>
 
@@ -463,6 +496,25 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 5. **Prefer `theme` over hard-coded colors** so a brand change is one line.
 6. **Test the long case.** A document that fits one page hides pagination bugs
    in a custom template — render 100 rows in a test.
+7. **Carry the total across the break** on a long table. A reader who turns
+   the page cannot tell what the lines above added up to:
+
+   ```dart
+   ...PdfDataTable(
+     ui: ui,
+     columns: columns,
+     rows: rows,
+     carryForward: PdfCarryForward(
+       column: columns.length - 1,          // the amount column
+       values: [for (final i in data.items) i.total],
+       format: format.number,
+     ),
+   ).buildPaginated(rowsPerPage: 24),       // spread into `body`
+   ```
+
+   The split is yours to set rather than measured: how many rows fit depends
+   on the font's metrics, and a carried line placed by a guess would claim a
+   total for rows that are not above it.
 
 ## 🔧 Troubleshooting
 
@@ -481,15 +533,18 @@ class DeliveryNoteTemplate extends ItemizedInvoiceTemplate<PdfSaleInvoiceModel> 
 
 - [x] Themeable design system and paginating tables
 - [x] Mixed Arabic/Latin text handling
-- [ ] ZATCA Phase 1 / Phase 2 QR payloads
-- [ ] Thermal / ESC-POS output for 58 mm and 80 mm rolls
-- [ ] Statement-of-account and delivery-note templates
+- [x] Statement of account, delivery note, quotation, purchase order,
+      credit and debit notes, payslip
+- [x] Till receipts for 80 mm and 57 mm rolls
+- [x] Any language through `PdfLabels`, and amounts spelled out in words
+- [ ] ZATCA Phase 1 QR payload (TLV) and Phase 2 fields
+- [ ] ESC-POS output, for printing to a till without a PDF in between
 
 ## 📝 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-- **v0.3.0** — Templates redesigned around type and space; Arabic/RTL layout was mirrored twice and is now correct; font-capability and document-naming fixes.
+- **v0.3.0** — Arabic layout was mirrored twice and is now correct; templates redesigned around type and space; eight new documents; every label named on `PdfLabels`; tax by rate, amounts in words, copy marks and golden tests.
 - **v0.2.1** — Design pass: tracked labels, softer table header, filled totals gutter, Arabic letter-spacing fix.
 - **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
 - **v0.1.0** — Initial templates, models and PDF generation.
