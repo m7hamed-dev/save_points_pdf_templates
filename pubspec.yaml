@@ -3,7 +3,7 @@ description: >-
   Printable business documents for Flutter — invoices, expense records,
   receipt vouchers and tabular reports — rendered to PDF with Arabic/RTL
   support, a themeable design system and page-aware tables.
-version: 0.3.0
+version: 0.1.0
 homepage: https://github.com/m7hamed-dev/save_points_pdf_templates
 repository: https://github.com/m7hamed-dev/save_points_pdf_templates
 issue_tracker: https://github.com/m7hamed-dev/save_points_pdf_templates/issues

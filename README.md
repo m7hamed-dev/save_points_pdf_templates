@@ -2,7 +2,7 @@
 
 # Save Points PDF Templates
 
-### Thirteen printable business documents for Flutter — invoices, quotations, vouchers, delivery notes, statements, payslips, till receipts — with first-class Arabic/RTL rendering
+### Fourteen printable business documents for Flutter — invoices, quotations, vouchers, delivery notes, statements, payslips, till receipts — with first-class Arabic/RTL rendering
 
 [![Pub Version](https://img.shields.io/pub/v/save_points_pdf_templates?style=flat-square&logo=dart&color=0175C2)](https://pub.dev/packages/save_points_pdf_templates)
 [![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.29-blue?style=flat-square&logo=flutter)](https://flutter.dev)
@@ -60,7 +60,7 @@ final bytes = await PdfGenerator.generate(
 
 | Feature | Description |
 |---------|-------------|
-| 🧾 **Thirteen documents** | Invoices, expenses, quotations, purchase orders, delivery notes, credit and debit notes, receipt and payment vouchers, statements, payslips, till receipts and free-form reports |
+| 🧾 **Fourteen documents** | Invoices, expenses, quotations, purchase orders, delivery notes, credit and debit notes, receipt and payment vouchers, statements, payslips, till receipts and free-form reports |
 | 🔤 **Arabic / RTL** | Mirrored layout, bilingual labels, and per-run script handling so `HP ProBook` inside Arabic text is not printed backwards |
 | 🗣️ **Any language** | Every word the package prints is a named getter on `PdfLabels` — a third language is a subclass, not a fork of every template |
 | ©️ **Copy marks** | `DRAFT`, `COPY`, `VOID` set diagonally behind the page, the one thing that survives a photocopier |
@@ -85,8 +85,12 @@ Or add it by hand:
 
 ```yaml
 dependencies:
-  save_points_pdf_templates: ^0.3.0
+  save_points_pdf_templates: ^0.1.0
 ```
+
+> [!NOTE]
+> This is the first release. The API has not been through anyone else's hands
+> yet, and `0.x` says so — expect shapes to move before 1.0.
 
 > [!IMPORTANT]
 > The package ships **no fonts**. The built-in PDF fonts are Latin-only, so
@@ -597,10 +601,7 @@ content — which is what an Arabic header needs, being one unbreakable word.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-- **v0.3.0** — Arabic layout was mirrored twice and is now correct; templates redesigned around type and space; eight new documents; every label named on `PdfLabels`; tax by rate, amounts in words, the ZATCA Phase 1 QR, copy marks and golden tests.
-- **v0.2.1** — Design pass: tracked labels, softer table header, filled totals gutter, Arabic letter-spacing fix.
-- **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
-- **v0.1.0** — Initial templates, models and PDF generation.
+- **v0.1.0** — First release.
 
 ## 🤝 Contributing
 
