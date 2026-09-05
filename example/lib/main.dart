@@ -198,8 +198,8 @@ class _DemoHomeState extends State<DemoHome> {
                       id: 'PV-2026-0014',
                       date: DateTime.now(),
                       payeeName: 'Gulf Office Supplies',
-                      amount: 3200,
-                      amountInWords: 'Three thousand two hundred Saudi Riyals',
+                      amount: 3245.50,
+                      // No wording given: the package spells it.
                       paymentMethod: 'Cheque #4471',
                       statement: 'Office furniture for the Jeddah branch',
                       disburserName: 'Mohamed Syed',

@@ -33,6 +33,13 @@ abstract class VoucherTemplate<T extends PdfVoucherModel>
   /// The two signature slots, company side first.
   List<String> get defaultSignatureLabels;
 
+  /// The amount written out: the caller's own wording when they gave one,
+  /// otherwise spelled by the config.
+  String get amountInWords =>
+      data.amountInWords?.isNotEmpty ?? false
+          ? data.amountInWords!
+          : pdfConfig.spellAmount(data.amount);
+
   @override
   pw.Widget? footer(pw.Context context) =>
       sections.pageFooter(context, note: company?.name, reference: data.id);
@@ -60,10 +67,10 @@ abstract class VoucherTemplate<T extends PdfVoucherModel>
       crossAxisAlignment: ui.crossStart,
       children: [
         ui.dottedField(counterpartyLabel, data.counterparty),
-        // The figure already dominates the block above; repeating it as a
-        // field would print the same amount twice.
-        if (data.amountInWords?.isNotEmpty ?? false)
-          ui.dottedField(labels.inWords, data.amountInWords!),
+        // Not a repeat of the figure above: the words are what the voucher
+        // is signed against, because a figure can be altered with a pen and
+        // a sentence cannot. Spelled for you when the caller supplies none.
+        ui.dottedField(labels.inWords, amountInWords),
         ui.dottedField(labels.voucherMethod, data.paymentMethod),
         ui.dottedField(labels.voucherFor, data.statement),
         ui.dottedField(labels.voucherDate, format.longDate(data.date)),

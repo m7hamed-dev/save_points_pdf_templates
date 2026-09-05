@@ -168,6 +168,18 @@ design has been rebuilt around type and space instead of boxes and rules.
   instead of asking `MultiPage` to paginate what has no page to fill.
 - `ItemizedInvoiceTemplate.extraBlocks`, for a block between the notes and the
   signatures.
+- **Amounts spelled out in words** — `PdfAmountInWords` with an English and an
+  Arabic speller, `PdfCurrencyWords` for how a currency is said, and
+  `PdfConfig.spellAmount`. A voucher states its amount twice because a figure
+  can be altered with a pen and a sentence cannot, and both vouchers now fill
+  the words in when the caller supplies none.
+
+  The Arabic speller inflects the number rather than approximating it: three
+  to ten take the opposite gender to the noun they count, two is a dual, and a
+  scale word goes accusative past eleven — but not after a round hundred,
+  which turns on the last element of the count rather than its size. `مائة ألف`
+  and `مائة وخمسة وعشرون ألفاً` are both right; reading the whole count instead
+  writes `مائة ألفاً`.
 
 ### Removed
 

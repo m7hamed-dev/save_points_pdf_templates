@@ -45,6 +45,7 @@ final bytes = await PdfGenerator.generate(
 - [Theming](#-theming)
 - [Labels & languages](#️-labels--languages)
 - [Arabic & RTL](#-arabic--rtl)
+- [Amounts in words](#️-amounts-in-words)
 - [Output](#-output)
 - [Custom Templates](#-custom-templates)
 - [Tips & Best Practices](#-tips--best-practices)
@@ -65,6 +66,7 @@ final bytes = await PdfGenerator.generate(
 | 📄 **Real pagination** | Long tables break across pages at row boundaries with the header repeated — no clipped rows, no infinite-page hangs |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
 | 🧮 **Totals that add up** | Discount and tax as an amount *or* a rate, per line or per document, with a tax breakdown by rate for a GCC tax invoice |
+| 🖊️ **Amounts in words** | `Twelve thousand five hundred Saudi Riyals only` / `اثنا عشر ألفاً وخمسمائة ريال سعودي فقط لا غير`, with the gender agreement Arabic needs |
 | 💰 **Money, properly** | Decimal places follow the currency — three for KWD and BHD, none for JPY — and due dates make a document say `OVERDUE` |
 | 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
 | 🔠 **Your fonts** | No bundled TTFs — point at an asset, hand over a `pw.Font`, and declare fallbacks for missing glyphs |
@@ -356,6 +358,27 @@ reason. Use `ui.money(value)` rather than interpolating a string.
 > apart, turning `الوحدة` into `لوحدة ا`. `PdfUi.text` drops `letterSpacing`
 > on any value containing RTL script, and `ui.microLabel` tracks and
 > upper-cases Latin only. Follow the same rule in custom code.
+
+## 🖊️ Amounts in words
+
+A voucher states its amount twice — in figures and in words — because a figure
+can be altered with a pen and a sentence cannot. Vouchers fill the words in
+for themselves when you do not supply any:
+
+```dart
+PdfConfig(locale: 'ar', currencyWords: PdfCurrencyWords.sarArabic)
+    .spellAmount(12500.75);
+// اثنا عشر ألفاً وخمسمائة ريال سعودي وخمس وسبعون هللة فقط لا غير
+```
+
+The Arabic speller inflects the number the way a reader would expect: three to
+ten take the *opposite* gender to the noun they count (`ثلاثة ريال` against
+`ثلاث هللة`), two is a dual, and a scale word goes accusative past eleven —
+`أحد عشر ألفاً` but `مائة ألف`, which turns on the last element of the count
+rather than its size.
+
+Pass `PdfCurrencyWords` for how your currency is *said*, and an
+`amountInWords` of your own for any other language.
 
 ## 📤 Output
 

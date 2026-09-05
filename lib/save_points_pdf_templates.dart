@@ -22,6 +22,7 @@ library;
 export 'package:pdf/pdf.dart' show PdfColor, PdfColors, PdfPageFormat;
 
 // ── Rendering ─────────────────────────────────────────────────────────────
+export 'pdf/core/formatters/pdf_amount_in_words.dart';
 export 'pdf/core/formatters/pdf_formatters.dart';
 export 'pdf/core/widgets/pdf_data_table.dart';
 export 'pdf/core/widgets/pdf_sections.dart';

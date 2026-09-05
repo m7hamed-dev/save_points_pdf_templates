@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:save_points_pdf_templates/pdf/core/formatters/pdf_amount_in_words.dart';
 import 'package:save_points_pdf_templates/pdf/core/formatters/pdf_formatters.dart';
 import 'package:save_points_pdf_templates/pdf/models/base/pdf_party_model.dart';
 import 'package:save_points_pdf_templates/pdf/pdf_config/pdf_labels.dart';
@@ -45,6 +46,8 @@ class PdfConfig {
     this.company,
     this.currency = 'SAR',
     this.currencyDecimals = 2,
+    this.currencyWords,
+    this.amountInWords,
     this.locale = 'en',
     this.theme = const PdfTheme(),
     this.labels,
@@ -85,6 +88,15 @@ class PdfConfig {
 
   /// Decimal places on money. Three for KWD and BHD, none for JPY.
   final int currencyDecimals;
+
+  /// How the currency is *said*, for an amount spelled out in words. `SAR` is
+  /// read aloud as `Saudi Riyals`, and it is the words a voucher is signed
+  /// against. Defaults to the riyal in whichever language the document speaks.
+  final PdfCurrencyWords? currencyWords;
+
+  /// Spells an amount out. Defaults to the built-in English or Arabic speller
+  /// by locale; pass your own for another language.
+  final PdfAmountInWords? amountInWords;
 
   /// BCP 47 locale tag. Anything starting with `ar` renders right-to-left.
   final String locale;
@@ -227,6 +239,25 @@ class PdfConfig {
 
   /// Accent color, kept for convenience and backwards compatibility.
   PdfColor get primaryColor => theme.accent;
+
+  /// The amount written out, the way a cheque carries it.
+  ///
+  /// A voucher states its amount twice — in figures and in words — because
+  /// figures can be altered with a pen and words cannot. Guarded the same way
+  /// the labels are: an Arabic sentence a Latin font cannot draw is a row of
+  /// blank boxes, so the English speller stands in.
+  String spellAmount(double amount) {
+    final speaksArabic = isRtl && canRenderArabic;
+    final speller =
+        amountInWords ??
+        (speaksArabic
+            ? const PdfArabicAmountInWords()
+            : const PdfEnglishAmountInWords());
+    final words =
+        currencyWords ??
+        (speaksArabic ? PdfCurrencyWords.sarArabic : PdfCurrencyWords.sar);
+    return speller.spell(amount, words);
+  }
 
   /// Loads fonts, logo and locale data. Safe to call repeatedly, and safe to
   /// call from two renders at once — the second awaits the first rather than
