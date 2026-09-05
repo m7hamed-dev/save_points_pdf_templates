@@ -37,6 +37,29 @@ a mirror of it. `test/widgets_test.dart` draws every `PdfUi` primitive and
 every `PdfSections` block in both, under all three presets, with empty and
 over-long input.
 
+**Hold the shape of the page.** The three kinds above assert facts somebody
+thought to assert; none of them notices a margin moving by a point, a rule
+thickening or a colour drifting. `test/golden_test.dart` renders four
+canonical documents uncompressed and compares their drawing operators against
+references in `test/goldens/`, one operator per line so a diff is readable.
+
+A golden failing is not a bug report — it says the drawn output changed, and
+whether that was intended is yours to decide. Look at
+`test/goldens/<name>.actual.txt`, which the failure leaves beside the
+reference, then either fix the change or accept it:
+
+```bash
+UPDATE_GOLDENS=1 flutter test test/golden_test.dart
+```
+
+Read the diff before you commit it. A golden updated without looking is worse
+than no golden: it grants confidence nobody earned.
+
+Whole files cannot be compared — `dart_pdf` stamps `/CreationDate` from the
+clock with no way to override it, so no two renders are byte-equal. Only the
+page content is, and there is a test asserting exactly that, because every
+golden rests on it.
+
 ## Fonts
 
 The package ships none on purpose. Tests that need Arabic load the example

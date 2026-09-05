@@ -180,6 +180,11 @@ design has been rebuilt around type and space instead of boxes and rules.
 
 ### Notes
 
+- Four canonical documents are now held by golden tests — an invoice in each
+  direction, a voucher and a till receipt. The rest of the suite asserts facts
+  somebody thought to assert; nothing in it noticed a margin moving by a
+  point, which in a package about how documents look is the gap that matters.
+
 - `PdfInvoiceType` documents which of its types have a template built around
   them and which are labels to put on a layout that already fits. Four have
   their own; a quotation or a credit note goes through the itemized layout by
