@@ -181,6 +181,37 @@ void main() {
     expect(blocks, isNotEmpty);
   });
 
+  // ── ZATCA e-invoicing ──────────────────────────────────────────────────
+
+  test('the ZATCA block builds the payload the README shows', () {
+    final config = PdfConfig(
+      company: const PdfPartyModel(
+        name: 'Save Points',
+        taxNumber: '310122393500003',
+      ),
+    );
+    final invoice = quickStartInvoice();
+
+    expect(ZatcaQr.forInvoice(config: config, invoice: invoice), isNotEmpty);
+
+    final byHand = ZatcaQr.phaseOne(
+      sellerName: 'Save Points',
+      vatNumber: '310122393500003',
+      timestamp: DateTime.utc(2026, 9, 5, 12),
+      totalWithVat: 1150,
+      vatAmount: 150,
+    );
+    expect(ZatcaQr.decode(byHand)[ZatcaQr.tagTotalWithVat], '1150.00');
+
+    // The Phase 2 pass-through, exactly as written.
+    final withPhaseTwo = ZatcaQr.forInvoice(
+      config: config,
+      invoice: invoice,
+      additionalTags: const {6: 'xmlHash', 7: 'signature', 8: 'publicKey'},
+    );
+    expect(ZatcaQr.decode(withPhaseTwo)[8], 'publicKey');
+  });
+
   test('every headless output entry point named in the README exists', () {
     expect(PdfDocuments.bytes, isNotNull);
     expect(PdfDocuments.share, isNotNull);

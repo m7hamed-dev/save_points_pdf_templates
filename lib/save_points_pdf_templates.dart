@@ -27,6 +27,7 @@ export 'pdf/core/formatters/pdf_formatters.dart';
 export 'pdf/core/widgets/pdf_data_table.dart';
 export 'pdf/core/widgets/pdf_sections.dart';
 export 'pdf/core/widgets/pdf_ui.dart';
+export 'pdf/core/zatca/zatca_qr.dart';
 export 'pdf/generator/pdf_generator.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────

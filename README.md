@@ -46,6 +46,7 @@ final bytes = await PdfGenerator.generate(
 - [Labels & languages](#️-labels--languages)
 - [Arabic & RTL](#-arabic--rtl)
 - [Amounts in words](#️-amounts-in-words)
+- [ZATCA e-invoicing](#-zatca-e-invoicing)
 - [Output](#-output)
 - [Custom Templates](#-custom-templates)
 - [Tips & Best Practices](#-tips--best-practices)
@@ -66,6 +67,7 @@ final bytes = await PdfGenerator.generate(
 | 📄 **Real pagination** | Long tables break at row boundaries with the header repeated, and can close each page with a carried-forward total |
 | 🎨 **Themeable** | `PdfTheme` drives every color, size, spacing and label tracking; three presets plus `copyWith` |
 | 🧮 **Totals that add up** | Discount and tax as an amount *or* a rate, per line or per document, with a tax breakdown by rate for a GCC tax invoice |
+| 🇸🇦 **ZATCA ready** | The Phase 1 QR payload built for you — TLV, Base64, from values the invoice already holds |
 | 🖊️ **Amounts in words** | `Twelve thousand five hundred Saudi Riyals only` / `اثنا عشر ألفاً وخمسمائة ريال سعودي فقط لا غير`, with the gender agreement Arabic needs |
 | 💰 **Money, properly** | Decimal places follow the currency — three for KWD and BHD, none for JPY — and due dates make a document say `OVERDUE` |
 | 💱 **Locale-aware** | Grouped thousands, sensible quantity decimals, and dates through `intl` |
@@ -390,6 +392,57 @@ rather than its size.
 Pass `PdfCurrencyWords` for how your currency is *said*, and an
 `amountInWords` of your own for any other language.
 
+## 🇸🇦 ZATCA e-invoicing
+
+A Saudi **simplified tax invoice** — the kind handed to an individual — has to
+carry a QR code, and its contents are not free text: five fields in TLV form
+(one byte of tag, one byte of length, then the value in UTF-8), Base64
+encoded. `qrCode` takes a string, so building that was left to you.
+
+```dart
+SaleInvoiceTemplate(
+  data: invoice,
+  pdfConfig: config,
+  qrCode: ZatcaQr.forInvoice(config: config, invoice: invoice),
+);
+```
+
+The seller, the VAT number, the timestamp, the total and the tax all come from
+what the config and the model already hold. Build it by hand when they do not:
+
+```dart
+ZatcaQr.phaseOne(
+  sellerName: 'Save Points',
+  vatNumber: '310122393500003',
+  timestamp: DateTime.now(),
+  totalWithVat: 1150,
+  vatAmount: 150,
+);
+```
+
+`ZatcaQr.decode` reads a payload back into its fields — the only way to be
+sure a QR is right is to decode it.
+
+> [!WARNING]
+> The length is a single byte, so no field may exceed 255 bytes — and an
+> Arabic name costs two bytes a letter, which puts a real company name within
+> reach of the limit. `phaseOne` throws rather than truncating: a cut-short
+> payload still scans, still prints, and is rejected months later by an
+> auditor.
+
+**Phase 2** — the cryptographic stamp, the certificate obtained by registering
+with the authority, the UBL document and the call to ZATCA's service — is not
+here, and deliberately. None of it belongs in a package that lays out PDFs.
+If you compute those fields elsewhere, pass them through:
+
+```dart
+ZatcaQr.forInvoice(
+  config: config,
+  invoice: invoice,
+  additionalTags: {6: xmlHash, 7: signature, 8: publicKey},
+);
+```
+
 ## 📤 Output
 
 ```dart
@@ -537,14 +590,14 @@ content — which is what an Arabic header needs, being one unbreakable word.
       credit and debit notes, payslip
 - [x] Till receipts for 80 mm and 57 mm rolls
 - [x] Any language through `PdfLabels`, and amounts spelled out in words
-- [ ] ZATCA Phase 1 QR payload (TLV) and Phase 2 fields
+- [x] ZATCA Phase 1 QR payload (TLV), and Phase 2 tags carried through
 - [ ] ESC-POS output, for printing to a till without a PDF in between
 
 ## 📝 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-- **v0.3.0** — Arabic layout was mirrored twice and is now correct; templates redesigned around type and space; eight new documents; every label named on `PdfLabels`; tax by rate, amounts in words, copy marks and golden tests.
+- **v0.3.0** — Arabic layout was mirrored twice and is now correct; templates redesigned around type and space; eight new documents; every label named on `PdfLabels`; tax by rate, amounts in words, the ZATCA Phase 1 QR, copy marks and golden tests.
 - **v0.2.1** — Design pass: tracked labels, softer table header, filled totals gutter, Arabic letter-spacing fix.
 - **v0.2.0** — Public API reworked, themeable design system, real pagination, Arabic/RTL correctness, tests.
 - **v0.1.0** — Initial templates, models and PDF generation.

@@ -168,6 +168,21 @@ design has been rebuilt around type and space instead of boxes and rules.
   instead of asking `MultiPage` to paginate what has no page to fill.
 - `ItemizedInvoiceTemplate.extraBlocks`, for a block between the notes and the
   signatures.
+- **`ZatcaQr`** — the QR payload a Saudi simplified tax invoice must carry.
+  Phase 1 is five fields in TLV form, Base64 encoded, and `qrCode` took a
+  string, so every caller was building the byte layout themselves. `forInvoice`
+  reads the values off the config and the model; `decode` reads a payload back,
+  because the only way to be sure a QR is right is to decode it.
+
+  No field may exceed 255 bytes, the length being one byte — and an Arabic
+  name costs two bytes a letter, which puts a real company name within reach.
+  It throws rather than truncating: a cut-short payload still scans and is
+  rejected months later.
+
+  Phase 2 is not here. The cryptographic stamp, the certificate obtained by
+  registering with the authority, the UBL document and the call to ZATCA's
+  service do not belong in a package that lays out PDFs; the tags are carried
+  through if you compute them elsewhere.
 - **Amounts spelled out in words** — `PdfAmountInWords` with an English and an
   Arabic speller, `PdfCurrencyWords` for how a currency is said, and
   `PdfConfig.spellAmount`. A voucher states its amount twice because a figure
